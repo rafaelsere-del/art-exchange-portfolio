@@ -6,6 +6,7 @@ import { Field, FieldArea } from "../components/Fields";
 import { RADIUS } from "../styles/theme";
 
 export default function ProfilePage({ user, setUser, setPage }) {
+  console.log("ROLE:", user.role);
   const [editing, setEditing] = useState(false);
   const [form, setForm] = useState({ name: user.name, bio: user.bio, location: user.location });
   const [saving, setSaving] = useState(false);
@@ -92,9 +93,16 @@ export default function ProfilePage({ user, setUser, setPage }) {
           ))}
         </div>
 
-        <button onClick={handleSignOut} style={{ background: "transparent", color: "#9e9589", padding: "11px 22px", border: "1px solid rgba(0,0,0,0.15)", cursor: "pointer", fontSize: "0.7rem", letterSpacing: "0.08em", textTransform: "uppercase", borderRadius: RADIUS }}>
-          Sign Out
-        </button>
+        <div style={{ display: "flex", gap: 12, flexWrap: "wrap" }}>
+          {user.role === "admin" && (
+            <button onClick={() => setPage("admin")} style={{ background: "#0d0d0d", color: "#f5f0e8", padding: "11px 22px", border: "none", cursor: "pointer", fontSize: "0.7rem", letterSpacing: "0.08em", textTransform: "uppercase", borderRadius: RADIUS }}>
+              Admin Panel →
+            </button>
+          )}
+          <button onClick={handleSignOut} style={{ background: "transparent", color: "#9e9589", padding: "11px 22px", border: "1px solid rgba(0,0,0,0.15)", cursor: "pointer", fontSize: "0.7rem", letterSpacing: "0.08em", textTransform: "uppercase", borderRadius: RADIUS }}>
+            Sign Out
+          </button>
+        </div>
       </div>
     </div>
   );

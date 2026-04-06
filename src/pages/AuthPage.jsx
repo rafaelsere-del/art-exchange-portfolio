@@ -33,10 +33,13 @@ export default function AuthPage({ setUser }) {
           createdAt: new Date()
         });
         setUser({
-          uid: firebaseUser.uid, name: form.name, email: form.email,
-          bio: form.bio || "Artist & collector",
-          location: form.location || "Somewhere beautiful",
-          artworks: [], matches: [], liked: [], passed: []
+          uid: firebaseUser.uid,
+          name: profile.name || firebaseUser.displayName || form.email.split("@")[0],
+          email: firebaseUser.email,
+          bio: profile.bio || "Artist & collector",
+          location: profile.location || "Somewhere beautiful",
+          role: "artist",  // ← signup siempre es artist
+          artworks, matches, liked: [], passed: []
         });
       } catch (err) {
         setError("Error: " + err.message);
@@ -77,6 +80,7 @@ export default function AuthPage({ setUser }) {
           email: firebaseUser.email,
           bio: profile.bio || "Artist & collector",
           location: profile.location || "Somewhere beautiful",
+          role: profile.role || "artist",  // ← esta línea
           artworks, matches, liked: [], passed: []
         });
       } catch (err) {

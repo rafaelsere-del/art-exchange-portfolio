@@ -7,6 +7,7 @@ import GalleryPage from "./pages/GalleryPage";
 import SwipePage from "./pages/SwipePage";
 import MatchesPage from "./pages/MatchesPage";
 import ProfilePage from "./pages/ProfilePage";
+import AdminPage from "./pages/AdminPage";
 
 const bodyStyle = {
   fontFamily: "'DM Mono', monospace",
@@ -21,7 +22,6 @@ export default function App() {
   const [user, setUser] = useState(null);
   const updateUser = fn => setUser(u => typeof fn === "function" ? fn(u) : fn);
 
-  // When user logs in, decide initial page based on artworks
   const handleSetUser = (newUser) => {
     setUser(newUser);
     if (newUser) {
@@ -30,6 +30,8 @@ export default function App() {
     }
   };
 
+  const isAdmin = user?.role === "admin";
+
   return (
     <div style={bodyStyle}>
       <style>{`
@@ -37,12 +39,12 @@ export default function App() {
         * { box-sizing: border-box; margin: 0; padding: 0; }
         @media (max-width: 600px) {
           img { max-width: 100%; height: auto; }
-          /* Add bottom padding so content isn't hidden behind BottomNav */
           #main-content { padding-bottom: 70px; }
         }
       `}</style>
 
-      <Nav page={page} setPage={setPage} user={user} />
+      {/* Hide nav on admin page */}
+      {page !== "admin" && <Nav page={page} setPage={setPage} user={user} />}
 
       <div id="main-content">
         {page === "home"    && <HomePage setPage={setPage} />}
@@ -51,11 +53,12 @@ export default function App() {
         {page === "swipe"   && user && <SwipePage user={user} setUser={updateUser} setPage={setPage} />}
         {page === "matches" && user && <MatchesPage user={user} />}
         {page === "profile" && user && <ProfilePage user={user} setUser={setUser} setPage={setPage} />}
+        {page === "admin"   && user && isAdmin && <AdminPage user={user} setPage={setPage} />}
+        {page === "admin"   && user && !isAdmin && <div style={{ padding: "120px 40px", textAlign: "center", color: "#9e9589" }}>Access denied.</div>}
         {!user && !["home","auth"].includes(page) && <AuthPage setUser={handleSetUser} setPage={setPage} />}
       </div>
 
-      {/* Bottom nav — only shown when logged in, hidden on desktop via CSS */}
-      {user && <BottomNav page={page} setPage={setPage} user={user} />}
+      {user && page !== "admin" && <BottomNav page={page} setPage={setPage} user={user} />}
     </div>
   );
 }
