@@ -166,22 +166,28 @@ export default function GalleryPage({ user, setUser }) {
               <h2 style={{ fontFamily: "'Playfair Display',serif", fontSize: "1.7rem", fontWeight: 900 }}>Add Artwork</h2>
               <button onClick={() => setShowUpload(false)} style={{ background: "none", border: "none", cursor: "pointer", fontSize: "1.2rem", color: "#9e9589" }}>✕</button>
             </div>
+
+            {/* Image error — shown prominently above drop zone */}
+            {imageError && (
+              <div style={{ background: "#c94b2d15", border: "1px solid #c94b2d40", borderRadius: RADIUS, padding: "12px 16px", marginBottom: 16, display: "flex", alignItems: "center", gap: 10 }}>
+                <span style={{ fontSize: "1rem" }}>⚠️</span>
+                <p style={{ fontSize: "0.72rem", color: "#c94b2d", margin: 0, lineHeight: 1.5 }}>{imageError}</p>
+              </div>
+            )}
+
             <div onDragOver={e => { e.preventDefault(); setDragOver(true); }} onDragLeave={() => setDragOver(false)}
               onDrop={e => { e.preventDefault(); setDragOver(false); handleFile(e.dataTransfer.files[0]); }}
               onClick={() => fileRef.current.click()}
-              style={{ width: "100%", height: 210, border: `2px dashed ${dragOver ? "#c94b2d" : "rgba(0,0,0,0.18)"}`, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", cursor: "pointer", marginBottom: 24, background: dragOver ? "rgba(201,75,45,0.04)" : "transparent", position: "relative", overflow: "hidden", transition: "border-color 0.2s, background 0.2s", borderRadius: RADIUS }}>
+              style={{ width: "100%", height: 210, border: `2px dashed ${imageError ? "#c94b2d" : dragOver ? "#c94b2d" : "rgba(0,0,0,0.18)"}`, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", cursor: "pointer", marginBottom: 24, background: dragOver ? "rgba(201,75,45,0.04)" : "transparent", position: "relative", overflow: "hidden", transition: "border-color 0.2s, background 0.2s", borderRadius: RADIUS }}>
               {preview
                 ? <img src={preview} alt="preview" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
                 : <>
                   <div style={{ fontSize: "2rem", marginBottom: 10 }}>🖼</div>
                   <div style={{ fontSize: "0.73rem", color: "#9e9589", textAlign: "center", lineHeight: 1.7 }}>Drag & drop your artwork image<br /><span style={{ color: "#c94b2d", textDecoration: "underline" }}>or click to browse</span></div>
-                  <div style={{ fontSize: "0.62rem", color: "#9e9589", marginTop: 6 }}>JPG, PNG, WEBP</div>
+                  <div style={{ fontSize: "0.62rem", color: "#9e9589", marginTop: 6 }}>JPG, PNG, WEBP · Max 1MB</div>
                 </>}
               <input ref={fileRef} type="file" accept="image/*" style={{ display: "none" }} onChange={e => handleFile(e.target.files[0])} />
             </div>
-            {imageError && (
-              <p style={{ fontSize: "0.68rem", color: "#c94b2d", marginBottom: 14, marginTop: -16 }}>{imageError}</p>
-            )}
             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14 }}>
               <div style={{ gridColumn: "1/-1" }}><Field label="Title *" name="title" value={form.title} onChange={handle} placeholder="Name your work" /></div>
               <Field label="Medium *" name="medium" value={form.medium} onChange={handle} placeholder="Oil on canvas..." />
