@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect, useCallback } from "react";
 import { db } from "../firebase";
-import { doc, setDoc, getDocs, collectionGroup } from "firebase/firestore";
+import { doc, setDoc, getDocs, collection } from "firebase/firestore";
 import ArtSVG from "../components/ArtSVG";
 import { RADIUS } from "../styles/theme";
 
@@ -22,15 +22,14 @@ export default function SwipePage({ user, setUser, setPage }) {
   useEffect(() => {
     const loadDeck = async () => {
       try {
-        const snap = await getDocs(collectionGroup(db, "artworks"));
+        const snap = await getDocs(collection(db, "users"));
         const allArtworks = snap.docs
-          .map(d => ({ id: d.id, ownerUid: d.ref.parent.parent.id, ...d.data() }))
+          .map(d => ({ id: d.id, ownerUid: d.id, ...d.data() }))
           .filter(a =>
             a.ownerUid !== user.uid &&
-            !(user.liked||[]).includes(a.id) &&
-            !(user.passed||[]).includes(a.id)
-          )
-          .sort((a, b) => (parseFloat(b.estimatedValue)||0) - (parseFloat(a.estimatedValue)||0));
+            !(user.liked || []).includes(a.id) &&
+            !(user.passed || []).includes(a.id)
+          );
         setDeck(allArtworks);
       } catch (err) {
         console.error("Error cargando artworks:", err);
@@ -54,16 +53,40 @@ export default function SwipePage({ user, setUser, setPage }) {
         const matchData = {
           user1: [user.uid, otherUid].sort()[0],
           user2: [user.uid, otherUid].sort()[1],
-          artwork1: { title: user.artworks?.[0]?.title || "My artwork", artist: user.name, imageUrl: user.artworks?.[0]?.imageUrl || null, color1: user.artworks?.[0]?.color1 || "#c9952d", color2: user.artworks?.[0]?.color2 || "#c94b2d", shape: user.artworks?.[0]?.shape || "lines" },
-          artwork2: { title: art.title, artist: art.artist, imageUrl: art.imageUrl || null, color1: art.color1, color2: art.color2, shape: art.shape },
+          artwork1: {
+            title: user.artworks?.[0]?.title || "My artwork",
+            artist: user.name,
+            imageUrl: user.artworks?.[0]?.imageUrl || null,
+            color1: user.artworks?.[0]?.color1 || "#c9952d",
+            color2: user.artworks?.[0]?.color2 || "#c94b2d",
+            shape: user.artworks?.[0]?.shape || "lines"
+          },
+          artwork2: {
+            title: art.name,
+            artist: art.name,
+            imageUrl: art.artworkBase64 || null,
+            color1: "#c9952d",
+            color2: "#c94b2d",
+            shape: "lines"
+          },
           matchedAt: new Date()
         };
         await setDoc(doc(db, "matches", matchId), matchData);
         setUser(u => ({
           ...u,
-          liked: dir === "right" ? [...(u.liked||[]), art.id] : u.liked,
-          passed: dir === "left" ? [...(u.passed||[]), art.id] : u.passed,
-          matches: [...(u.matches||[]), { id: matchId, otherUid, title: art.title, artist: art.artist, medium: art.medium, size: art.size, year: art.year, imageUrl: art.imageUrl || null, color1: art.color1, color2: art.color2, shape: art.shape }]
+          liked: dir === "right" ? [...(u.liked || []), art.id] : u.liked,
+          passed: dir === "left" ? [...(u.passed || []), art.id] : u.passed,
+          matches: [...(u.matches || []), {
+            id: matchId,
+            otherUid,
+            title: art.name,
+            artist: art.name,
+            location: art.location,
+            imageUrl: art.artworkBase64 || null,
+            color1: "#c9952d",
+            color2: "#c94b2d",
+            shape: "lines"
+          }]
         }));
       } catch (err) {
         console.error("Error guardando match:", err);
@@ -71,8 +94,8 @@ export default function SwipePage({ user, setUser, setPage }) {
     } else {
       setUser(u => ({
         ...u,
-        liked: dir === "right" ? [...(u.liked||[]), art.id] : u.liked,
-        passed: dir === "left" ? [...(u.passed||[]), art.id] : u.passed,
+        liked: dir === "right" ? [...(u.liked || []), art.id] : u.liked,
+        passed: dir === "left" ? [...(u.passed || []), art.id] : u.passed,
       }));
     }
 
@@ -96,9 +119,9 @@ export default function SwipePage({ user, setUser, setPage }) {
     const dx = pt.clientX - drag.current.startX;
     const dy = pt.clientY - drag.current.startY;
     drag.current.dx = dx;
-    cardRef.current.style.transform = `translateX(${dx}px) translateY(${dy*0.2}px) rotate(${dx*0.07}deg)`;
-    if (labelWantRef.current) labelWantRef.current.style.opacity = dx > 30 ? Math.min(1,(dx-30)/80) : 0;
-    if (labelPassRef.current) labelPassRef.current.style.opacity = dx < -30 ? Math.min(1,(-dx-30)/80) : 0;
+    cardRef.current.style.transform = `translateX(${dx}px) translateY(${dy * 0.2}px) rotate(${dx * 0.07}deg)`;
+    if (labelWantRef.current) labelWantRef.current.style.opacity = dx > 30 ? Math.min(1, (dx - 30) / 80) : 0;
+    if (labelPassRef.current) labelPassRef.current.style.opacity = dx < -30 ? Math.min(1, (-dx - 30) / 80) : 0;
   }, []);
 
   const onEnd = useCallback(() => {
@@ -152,9 +175,9 @@ export default function SwipePage({ user, setUser, setPage }) {
       </div>
 
       <div style={{ position: "relative", width: "90%", maxWidth: 350, height: "60vh", marginBottom: 28 }}>
-        {deck.slice(0,3).reverse().map((art, ri) => {
-          const isTop = ri === Math.min(deck.length,3) - 1;
-          const offset = Math.min(deck.length,3) - 1 - ri;
+        {deck.slice(0, 3).reverse().map((art, ri) => {
+          const isTop = ri === Math.min(deck.length, 3) - 1;
+          const offset = Math.min(deck.length, 3) - 1 - ri;
           const rotations = [-1, 3, -5];
           return (
             <div key={art.id} ref={isTop ? cardRef : null}
@@ -178,14 +201,16 @@ export default function SwipePage({ user, setUser, setPage }) {
                 <div ref={labelPassRef} style={{ position: "absolute", top: 20, right: 16, padding: "5px 13px", border: "2px solid #c94b2d", color: "#c94b2d", fontSize: "0.7rem", letterSpacing: "0.12em", textTransform: "uppercase", transform: "rotate(8deg)", opacity: 0, zIndex: 10, pointerEvents: "none", background: "rgba(255,255,255,0.92)", borderRadius: RADIUS }}>PASS</div>
               </>}
               <div style={{ height: 295, overflow: "hidden", pointerEvents: "none" }}>
-                {art.imageUrl ? <img src={art.imageUrl} alt={art.title} style={{ width: "100%", height: "100%", objectFit: "cover" }} /> : <ArtSVG artwork={art} width={320} height={295} />}
+                {art.artworkBase64
+                  ? <img src={art.artworkBase64} alt={art.name} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                  : <ArtSVG artwork={art} width={320} height={295} />
+                }
               </div>
               <div style={{ padding: "14px 18px" }}>
-                <div style={{ fontSize: "0.6rem", textTransform: "uppercase", letterSpacing: "0.14em", color: "#9e9589", marginBottom: 4 }}>{art.artist} — {art.location}</div>
-                <div style={{ fontFamily: "'Playfair Display',serif", fontSize: "1.1rem", fontWeight: 700, marginBottom: 6 }}>{art.title}</div>
+                <div style={{ fontSize: "0.6rem", textTransform: "uppercase", letterSpacing: "0.14em", color: "#9e9589", marginBottom: 4 }}>{art.name} — {art.location}</div>
+                <div style={{ fontFamily: "'Playfair Display',serif", fontSize: "1.1rem", fontWeight: 700, marginBottom: 6 }}>{art.artworkFile?.replace(/_/g, " ").replace(".jpg", "") || art.name}</div>
                 <div style={{ display: "flex", justifyContent: "space-between" }}>
-                  <span style={{ fontSize: "0.6rem", color: "#9e9589" }}>{art.medium} · {art.size}</span>
-                  <span style={{ fontSize: "0.6rem", color: "#9e9589" }}>{art.year}</span>
+                  <span style={{ fontSize: "0.6rem", color: "#9e9589" }}>{art.bio?.slice(0, 60)}...</span>
                 </div>
               </div>
             </div>
@@ -194,7 +219,7 @@ export default function SwipePage({ user, setUser, setPage }) {
       </div>
 
       <div style={{ display: "flex", gap: 22, alignItems: "center" }}>
-        {[["✕","#c94b2d","Pass","left",58],["+","#9e9589","Info",null,44],["♡","#5a7a5e","Want","right",58]].map(([icon,color,title,dir,size]) => (
+        {[["✕", "#c94b2d", "Pass", "left", 58], ["+", "#9e9589", "Info", null, 44], ["♡", "#5a7a5e", "Want", "right", 58]].map(([icon, color, title, dir, size]) => (
           <button key={title} onClick={() => dir && doSwipe(dir)} title={title}
             style={{ width: size, height: size, borderRadius: "50%", border: `1.5px solid ${color}`, background: "white", color, fontSize: size > 50 ? "1.3rem" : "0.9rem", display: "flex", alignItems: "center", justifyContent: "center", boxShadow: "0 4px 16px rgba(0,0,0,0.1)", transition: "all 0.2s", cursor: "pointer" }}
             onMouseOver={e => { e.currentTarget.style.background = color; e.currentTarget.style.color = "white"; e.currentTarget.style.transform = "scale(1.1)"; }}
@@ -208,11 +233,16 @@ export default function SwipePage({ user, setUser, setPage }) {
       {matchArt && (
         <div style={{ position: "fixed", inset: 0, background: "rgba(13,13,13,0.92)", zIndex: 400, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center" }}>
           <div style={{ fontFamily: "'Playfair Display',serif", fontSize: "3.2rem", color: "white", fontWeight: 900, fontStyle: "italic", marginBottom: 8 }}>It's a Match</div>
-          <p style={{ fontSize: "0.68rem", color: "rgba(255,255,255,0.5)", letterSpacing: "0.2em", textTransform: "uppercase", marginBottom: 36 }}>{matchArt.artist} also wants to trade</p>
+          <p style={{ fontSize: "0.68rem", color: "rgba(255,255,255,0.5)", letterSpacing: "0.2em", textTransform: "uppercase", marginBottom: 36 }}>{matchArt.name} also wants to trade</p>
           <div style={{ display: "flex", gap: 20, marginBottom: 36, alignItems: "center" }}>
             {[user.artworks?.[0], matchArt].map((art, i) => (
               <div key={i} style={{ width: 155, height: 195, background: "white", overflow: "hidden", borderRadius: RADIUS }}>
-                {art?.imageUrl ? <img src={art.imageUrl} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} /> : <ArtSVG artwork={art || MOCK_ARTWORKS[1]} width={155} height={195} />}
+                {art?.artworkBase64
+                  ? <img src={art.artworkBase64} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                  : art?.imageUrl
+                    ? <img src={art.imageUrl} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                    : <ArtSVG artwork={art || MOCK_ARTWORKS[1]} width={155} height={195} />
+                }
               </div>
             ))}
           </div>
