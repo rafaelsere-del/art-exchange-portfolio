@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { auth, db } from "../firebase";
 import { createUserWithEmailAndPassword, signInWithEmailAndPassword } from "firebase/auth";
-import { doc, setDoc, getDoc, collection, getDocs } from "firebase/firestore";
+import { doc, setDoc, getDoc, getDocs, collection, query, where } from "firebase/firestore";
 import { Field, FieldArea } from "../components/Fields";
 import { btnPrimary, btnAccent, btnOutline } from "../styles/theme";
 
@@ -27,34 +27,39 @@ export default function AuthPage({ setUser }) {
         const userCredential = await createUserWithEmailAndPassword(auth, form.email, form.password);
         const firebaseUser = userCredential.user;
         await setDoc(doc(db, "users", firebaseUser.uid), {
-          name: form.name, email: form.email,
+          name: form.name,
+          email: form.email,
           bio: form.bio || "Artist & collector",
           location: form.location || "Somewhere beautiful",
+          role: "artist",
           createdAt: new Date()
         });
         setUser({
           uid: firebaseUser.uid,
-          name: profile.name || firebaseUser.displayName || form.email.split("@")[0],
-          email: firebaseUser.email,
-          bio: profile.bio || "Artist & collector",
-          location: profile.location || "Somewhere beautiful",
-          role: "artist",  // ← signup siempre es artist
-          artworks, matches, liked: [], passed: []
+          name: form.name,
+          email: form.email,
+          bio: form.bio || "Artist & collector",
+          location: form.location || "Somewhere beautiful",
+          role: "artist",
+          artworks: [],
+          matches: [],
+          liked: [],
+          passed: []
         });
       } catch (err) {
         setError("Error: " + err.message);
       }
+
     } else {
       try {
         const userCredential = await signInWithEmailAndPassword(auth, form.email, form.password);
         const firebaseUser = userCredential.user;
 
+        // Load profile
         const profileSnap = await getDoc(doc(db, "users", firebaseUser.uid));
         const profile = profileSnap.exists() ? profileSnap.data() : {};
 
-        const artworksSnap = await getDocs(collection(db, "users", firebaseUser.uid, "artworks"));
-        const artworks = artworksSnap.docs.map(d => ({ id: d.id, ...d.data() }));
-
+        // Load matches
         const allMatchesSnap = await getDocs(collection(db, "matches"));
         const matches = allMatchesSnap.docs
           .filter(d => d.id.includes(firebaseUser.uid))
@@ -67,6 +72,7 @@ export default function AuthPage({ setUser }) {
               otherUid: isUser1 ? data.user2 : data.user1,
               title: otherArtwork?.title || "Artwork",
               artist: otherArtwork?.artist || "Artist",
+              artworkBase64: otherArtwork?.artworkBase64 || null,
               imageUrl: otherArtwork?.imageUrl || null,
               color1: otherArtwork?.color1 || "#c9952d",
               color2: otherArtwork?.color2 || "#c94b2d",
@@ -74,14 +80,25 @@ export default function AuthPage({ setUser }) {
             };
           });
 
+        // Load likes from Firestore — all likes this user has given
+        const likesSnap = await getDocs(collection(db, "likes"));
+        const liked = likesSnap.docs
+          .filter(d => d.data().from === firebaseUser.uid)
+          .map(d => d.data().to);
+
         setUser({
           uid: firebaseUser.uid,
           name: profile.name || firebaseUser.displayName || form.email.split("@")[0],
           email: firebaseUser.email,
           bio: profile.bio || "Artist & collector",
           location: profile.location || "Somewhere beautiful",
-          role: profile.role || "artist",  // ← esta línea
-          artworks, matches, liked: [], passed: []
+          role: profile.role || "artist",
+          artworkBase64: profile.artworkBase64 || null,
+          artworkFile: profile.artworkFile || null,
+          artworks: [],
+          matches,
+          liked,
+          passed: []
         });
       } catch (err) {
         setError("Error: " + err.message);

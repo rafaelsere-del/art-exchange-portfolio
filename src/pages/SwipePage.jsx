@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect, useCallback } from "react";
 import { db } from "../firebase";
-import { doc, setDoc, getDocs, collection } from "firebase/firestore";
+import { doc, setDoc, getDoc, getDocs, collection } from "firebase/firestore";
 import ArtSVG from "../components/ArtSVG";
 import { RADIUS } from "../styles/theme";
 
@@ -43,69 +43,104 @@ export default function SwipePage({ user, setUser, setPage }) {
   const doSwipe = useCallback(async (dir) => {
     if (!deck[0]) return;
     const art = deck[0];
-    const isMatch = dir === "right" && Math.random() > 0.35;
     setAnimDir(dir);
 
-    if (isMatch) {
+    if (dir === "right") {
       try {
-        const otherUid = art.ownerUid || "mock_" + art.id;
-        const matchId = [user.uid, otherUid].sort().join("_");
-        const matchData = {
-          user1: [user.uid, otherUid].sort()[0],
-          user2: [user.uid, otherUid].sort()[1],
-          artwork1: {
-            title: user.artworks?.[0]?.title || "My artwork",
-            artist: user.name,
-            imageUrl: user.artworks?.[0]?.imageUrl || null,
-            color1: user.artworks?.[0]?.color1 || "#c9952d",
-            color2: user.artworks?.[0]?.color2 || "#c94b2d",
-            shape: user.artworks?.[0]?.shape || "lines"
-          },
-          artwork2: {
-            title: art.name,
-            artist: art.name,
-            imageUrl: art.artworkBase64 || null,
-            color1: "#c9952d",
-            color2: "#c94b2d",
-            shape: "lines"
-          },
-          matchedAt: new Date()
-        };
-        await setDoc(doc(db, "matches", matchId), matchData);
-        setUser(u => ({
-          ...u,
-          liked: dir === "right" ? [...(u.liked || []), art.id] : u.liked,
-          passed: dir === "left" ? [...(u.passed || []), art.id] : u.passed,
-          matches: [...(u.matches || []), {
-            id: matchId,
-            otherUid,
-            title: art.name,
-            artist: art.name,
-            location: art.location,
-            imageUrl: art.artworkBase64 || null,
-            color1: "#c9952d",
-            color2: "#c94b2d",
-            shape: "lines"
-          }]
-        }));
+        const otherUid = art.ownerUid;
+
+        // 1. Guardar el like en Firestore
+        await setDoc(doc(db, "likes", `${user.uid}_${otherUid}`), {
+          from: user.uid,
+          to: otherUid,
+          createdAt: new Date()
+        });
+
+        // 2. Verificar si el otro usuario ya me dio like
+        const reverseLikeSnap = await getDoc(doc(db, "likes", `${otherUid}_${user.uid}`));
+        const isMatch = reverseLikeSnap.exists();
+
+        if (isMatch) {
+          // 3. Crear el match en Firestore
+          const matchId = [user.uid, otherUid].sort().join("_");
+          await setDoc(doc(db, "matches", matchId), {
+            user1: [user.uid, otherUid].sort()[0],
+            user2: [user.uid, otherUid].sort()[1],
+            artwork1: {
+              title: user.name,
+              artist: user.name,
+              imageUrl: user.artworkBase64 || null,
+              artworkBase64: user.artworkBase64 || null,
+            },
+            artwork2: {
+              title: art.name,
+              artist: art.name,
+              imageUrl: art.artworkBase64 || null,
+              artworkBase64: art.artworkBase64 || null,
+            },
+            matchedAt: new Date()
+          });
+
+          setUser(u => ({
+            ...u,
+            liked: [...(u.liked || []), art.id],
+            matches: [...(u.matches || []), {
+              id: matchId,
+              otherUid,
+              title: art.name,
+              artist: art.name,
+              location: art.location,
+              artworkBase64: art.artworkBase64 || null,
+              imageUrl: art.artworkBase64 || null,
+              color1: "#c9952d",
+              color2: "#c94b2d",
+              shape: "lines"
+            }]
+          }));
+
+          setTimeout(() => {
+            setDeck(d => d.slice(1));
+            setAnimDir(null);
+            if (cardRef.current) cardRef.current.style.transform = "rotate(-1deg)";
+            setMatchArt(art);
+          }, 500);
+
+        } else {
+          // Like guardado pero aún no hay match
+          setUser(u => ({
+            ...u,
+            liked: [...(u.liked || []), art.id],
+          }));
+
+          setTimeout(() => {
+            setDeck(d => d.slice(1));
+            setAnimDir(null);
+            if (cardRef.current) cardRef.current.style.transform = "rotate(-1deg)";
+          }, 500);
+        }
+
       } catch (err) {
-        console.error("Error guardando match:", err);
+        console.error("Error procesando swipe:", err);
+        setTimeout(() => {
+          setDeck(d => d.slice(1));
+          setAnimDir(null);
+        }, 500);
       }
+
     } else {
+      // Swipe left — solo pasar
       setUser(u => ({
         ...u,
-        liked: dir === "right" ? [...(u.liked || []), art.id] : u.liked,
-        passed: dir === "left" ? [...(u.passed || []), art.id] : u.passed,
+        passed: [...(u.passed || []), art.id],
       }));
-    }
 
-    setTimeout(() => {
-      setDeck(d => d.slice(1));
-      setAnimDir(null);
-      if (cardRef.current) cardRef.current.style.transform = "rotate(-1deg)";
-      if (isMatch) setMatchArt(art);
-    }, 500);
-  }, [deck, setUser, user.uid, user.name, user.artworks]);
+      setTimeout(() => {
+        setDeck(d => d.slice(1));
+        setAnimDir(null);
+        if (cardRef.current) cardRef.current.style.transform = "rotate(-1deg)";
+      }, 500);
+    }
+  }, [deck, setUser, user.uid, user.name, user.artworkBase64]);
 
   const onStart = e => {
     const pt = e.touches ? e.touches[0] : e;
@@ -208,10 +243,10 @@ export default function SwipePage({ user, setUser, setPage }) {
               </div>
               <div style={{ padding: "14px 18px" }}>
                 <div style={{ fontSize: "0.6rem", textTransform: "uppercase", letterSpacing: "0.14em", color: "#9e9589", marginBottom: 4 }}>{art.name} — {art.location}</div>
-                <div style={{ fontFamily: "'Playfair Display',serif", fontSize: "1.1rem", fontWeight: 700, marginBottom: 6 }}>{art.artworkFile?.replace(/_/g, " ").replace(".jpg", "") || art.name}</div>
-                <div style={{ display: "flex", justifyContent: "space-between" }}>
-                  <span style={{ fontSize: "0.6rem", color: "#9e9589" }}>{art.bio?.slice(0, 60)}...</span>
+                <div style={{ fontFamily: "'Playfair Display',serif", fontSize: "1.1rem", fontWeight: 700, marginBottom: 6 }}>
+                  {art.artworkFile?.replace(/_/g, " ").replace(".jpg", "") || art.name}
                 </div>
+                <div style={{ fontSize: "0.6rem", color: "#9e9589" }}>{art.bio?.slice(0, 80)}...</div>
               </div>
             </div>
           );
@@ -233,24 +268,26 @@ export default function SwipePage({ user, setUser, setPage }) {
       {matchArt && (
         <div style={{ position: "fixed", inset: 0, background: "rgba(13,13,13,0.92)", zIndex: 400, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center" }}>
           <div style={{ fontFamily: "'Playfair Display',serif", fontSize: "3.2rem", color: "white", fontWeight: 900, fontStyle: "italic", marginBottom: 8 }}>It's a Match</div>
-          <p style={{ fontSize: "0.68rem", color: "rgba(255,255,255,0.5)", letterSpacing: "0.2em", textTransform: "uppercase", marginBottom: 36 }}>{matchArt.name} also wants to trade</p>
+          <p style={{ fontSize: "0.68rem", color: "rgba(255,255,255,0.5)", letterSpacing: "0.2em", textTransform: "uppercase", marginBottom: 36 }}>
+            {matchArt.name} also wants to trade
+          </p>
           <div style={{ display: "flex", gap: 20, marginBottom: 36, alignItems: "center" }}>
-            {[user.artworks?.[0], matchArt].map((art, i) => (
+            {[{ artworkBase64: user.artworkBase64 }, matchArt].map((art, i) => (
               <div key={i} style={{ width: 155, height: 195, background: "white", overflow: "hidden", borderRadius: RADIUS }}>
                 {art?.artworkBase64
                   ? <img src={art.artworkBase64} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
-                  : art?.imageUrl
-                    ? <img src={art.imageUrl} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
-                    : <ArtSVG artwork={art || MOCK_ARTWORKS[1]} width={155} height={195} />
+                  : <ArtSVG artwork={art || MOCK_ARTWORKS[i]} width={155} height={195} />
                 }
               </div>
             ))}
           </div>
           <div style={{ display: "flex", gap: 12 }}>
-            <button onClick={() => { setMatchArt(null); setPage("matches"); }} style={{ background: "#c94b2d", color: "white", padding: "13px 26px", border: "none", cursor: "pointer", fontSize: "0.72rem", letterSpacing: "0.1em", textTransform: "uppercase", borderRadius: RADIUS }}>
+            <button onClick={() => { setMatchArt(null); setPage("matches"); }}
+              style={{ background: "#c94b2d", color: "white", padding: "13px 26px", border: "none", cursor: "pointer", fontSize: "0.72rem", letterSpacing: "0.1em", textTransform: "uppercase", borderRadius: RADIUS }}>
               Start the Conversation
             </button>
-            <button onClick={() => setMatchArt(null)} style={{ background: "transparent", color: "rgba(255,255,255,0.5)", padding: "13px 22px", border: "1px solid rgba(255,255,255,0.2)", cursor: "pointer", fontSize: "0.7rem", letterSpacing: "0.08em", textTransform: "uppercase", borderRadius: RADIUS }}>
+            <button onClick={() => setMatchArt(null)}
+              style={{ background: "transparent", color: "rgba(255,255,255,0.5)", padding: "13px 22px", border: "1px solid rgba(255,255,255,0.2)", cursor: "pointer", fontSize: "0.7rem", letterSpacing: "0.08em", textTransform: "uppercase", borderRadius: RADIUS }}>
               Keep Browsing
             </button>
           </div>
