@@ -34,6 +34,9 @@ export default function MatchesPage({ user }) {
     }
   };
 
+  // Helper — get the best available image for a match
+  const getImage = (art) => art?.artworkBase64 || art?.imageUrl || null;
+
   return (
     <div style={{ paddingTop: 80, minHeight: "100vh", padding: "96px 0 0" }}>
       <div style={{ maxWidth: 920, margin: "0 auto", padding: "0 40px 40px" }}>
@@ -50,43 +53,68 @@ export default function MatchesPage({ user }) {
           </div>
         ) : (
           <div style={{ display: "grid", gridTemplateColumns: activeChat ? "290px 1fr" : "1fr", gap: 2, background: "rgba(0,0,0,0.07)", borderRadius: RADIUS, overflow: "hidden" }}>
+
+            {/* Match list */}
             <div style={{ background: "#f5f0e8" }}>
               {matches.map(art => (
-                <div key={art.id} onClick={() => setActiveChat(art)} style={{ display: "flex", gap: 14, padding: "18px", cursor: "pointer", background: activeChat?.id === art.id ? "#ede8dc" : "transparent", borderLeft: activeChat?.id === art.id ? "3px solid #c94b2d" : "3px solid transparent", transition: "background 0.2s" }}>
+                <div key={art.id} onClick={() => setActiveChat(art)}
+                  style={{ display: "flex", gap: 14, padding: "18px", cursor: "pointer", background: activeChat?.id === art.id ? "#ede8dc" : "transparent", borderLeft: activeChat?.id === art.id ? "3px solid #c94b2d" : "3px solid transparent", transition: "background 0.2s" }}>
                   <div style={{ width: 56, height: 56, flexShrink: 0, overflow: "hidden", borderRadius: RADIUS }}>
-                    {art.imageUrl ? <img src={art.imageUrl} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} /> : <ArtSVG artwork={art} width={56} height={56} />}
+                    {getImage(art)
+                      ? <img src={getImage(art)} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                      : <ArtSVG artwork={art} width={56} height={56} />
+                    }
                   </div>
                   <div>
-                    <div style={{ fontFamily: "'Playfair Display',serif", fontSize: "0.92rem", fontWeight: 700 }}>{art.artist}</div>
-                    <div style={{ fontSize: "0.62rem", color: "#9e9589", marginTop: 2 }}>"{art.title}"</div>
+                    <div style={{ fontFamily: "'Playfair Display',serif", fontSize: "0.92rem", fontWeight: 700 }}>
+                      {art.artist || art.title || "Artist"}
+                    </div>
+                    <div style={{ fontSize: "0.62rem", color: "#9e9589", marginTop: 2 }}>
+                      {art.location || ""}
+                    </div>
                     <div style={{ fontSize: "0.58rem", color: "#5a7a5e", marginTop: 3 }}>✓ Mutual match</div>
                   </div>
                 </div>
               ))}
             </div>
 
+            {/* Chat panel */}
             {activeChat && (
               <div style={{ background: "white", display: "flex", flexDirection: "column", height: 500 }}>
+
+                {/* Chat header */}
                 <div style={{ padding: "18px 22px", borderBottom: "1px solid rgba(0,0,0,0.08)", display: "flex", gap: 14, alignItems: "center" }}>
                   <div style={{ width: 42, height: 42, overflow: "hidden", flexShrink: 0, borderRadius: RADIUS }}>
-                    {activeChat.imageUrl ? <img src={activeChat.imageUrl} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} /> : <ArtSVG artwork={activeChat} width={42} height={42} />}
+                    {getImage(activeChat)
+                      ? <img src={getImage(activeChat)} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                      : <ArtSVG artwork={activeChat} width={42} height={42} />
+                    }
                   </div>
                   <div>
-                    <div style={{ fontFamily: "'Playfair Display',serif", fontWeight: 700 }}>{activeChat.artist}</div>
-                    <div style={{ fontSize: "0.6rem", color: "#9e9589" }}>"{activeChat.title}" · {activeChat.medium}</div>
+                    <div style={{ fontFamily: "'Playfair Display',serif", fontWeight: 700 }}>
+                      {activeChat.artist || activeChat.title || "Artist"}
+                    </div>
+                    <div style={{ fontSize: "0.6rem", color: "#9e9589" }}>
+                      {activeChat.location || ""}
+                    </div>
                   </div>
-                  <div style={{ marginLeft: "auto", fontSize: "0.58rem", textTransform: "uppercase", letterSpacing: "0.12em", color: "#5a7a5e", background: "rgba(90,122,94,0.1)", padding: "4px 10px", borderRadius: RADIUS }}>Trade Pending</div>
+                  <div style={{ marginLeft: "auto", fontSize: "0.58rem", textTransform: "uppercase", letterSpacing: "0.12em", color: "#5a7a5e", background: "rgba(90,122,94,0.1)", padding: "4px 10px", borderRadius: RADIUS }}>
+                    Trade Pending
+                  </div>
                 </div>
 
+                {/* Messages */}
                 <div style={{ flex: 1, overflowY: "auto", padding: "20px", display: "flex", flexDirection: "column", gap: 10 }}>
                   {messages.length === 0 && (
                     <div style={{ textAlign: "center", color: "#9e9589", fontSize: "0.7rem", fontStyle: "italic", margin: "auto 0" }}>
-                      You matched on "{activeChat.title}".<br />Start the conversation about your trade.
+                      You matched with {activeChat.artist || "this artist"}.<br />Start the conversation about your trade.
                     </div>
                   )}
                   {messages.map((msg) => {
                     const isMe = msg.fromUid === user.uid;
-                    const time = msg.createdAt?.toDate?.() ? msg.createdAt.toDate().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }) : "";
+                    const time = msg.createdAt?.toDate?.()
+                      ? msg.createdAt.toDate().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })
+                      : "";
                     return (
                       <div key={msg.id} style={{ display: "flex", justifyContent: isMe ? "flex-end" : "flex-start" }}>
                         <div style={{ maxWidth: "72%", padding: "10px 13px", background: isMe ? "#0d0d0d" : "#ede8dc", color: isMe ? "#f5f0e8" : "#0d0d0d", fontSize: "0.78rem", lineHeight: 1.6, borderRadius: RADIUS }}>
@@ -100,11 +128,17 @@ export default function MatchesPage({ user }) {
                   <div ref={msgsEndRef} />
                 </div>
 
+                {/* Input */}
                 <div style={{ padding: "14px 18px", borderTop: "1px solid rgba(0,0,0,0.08)", display: "flex", gap: 10 }}>
-                  <input value={input} onChange={e => setInput(e.target.value)} onKeyDown={e => e.key === "Enter" && sendMsg()}
+                  <input
+                    value={input}
+                    onChange={e => setInput(e.target.value)}
+                    onKeyDown={e => e.key === "Enter" && sendMsg()}
                     placeholder="Propose the terms of your trade..."
-                    style={{ flex: 1, padding: "11px 14px", border: "1.5px solid rgba(0,0,0,0.13)", background: "#f5f0e8", fontSize: "0.78rem", outline: "none", fontFamily: "'DM Mono',monospace", borderRadius: RADIUS }} />
-                  <button onClick={sendMsg} style={{ background: "#c94b2d", color: "white", padding: "11px 18px", border: "none", cursor: "pointer", fontSize: "0.7rem", letterSpacing: "0.06em", borderRadius: RADIUS }}>
+                    style={{ flex: 1, padding: "11px 14px", border: "1.5px solid rgba(0,0,0,0.13)", background: "#f5f0e8", fontSize: "0.78rem", outline: "none", fontFamily: "'DM Mono',monospace", borderRadius: RADIUS }}
+                  />
+                  <button onClick={sendMsg}
+                    style={{ background: "#c94b2d", color: "white", padding: "11px 18px", border: "none", cursor: "pointer", fontSize: "0.7rem", letterSpacing: "0.06em", borderRadius: RADIUS }}>
                     Send
                   </button>
                 </div>
