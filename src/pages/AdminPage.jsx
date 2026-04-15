@@ -37,15 +37,22 @@ export default function AdminPage({ user, setPage }) {
         const usersSnap = await getDocs(collection(db, "users"));
         const usersData = await Promise.all(
           usersSnap.docs.map(async d => {
-            // Load artworks subcollection for each user
-            const artworksSnap = await getDocs(collection(db, "users", d.id, "artworks"));
-            const artworks = artworksSnap.docs.map(a => ({ id: a.id, ...a.data() }));
-            return {
-              uid: d.id,
-              ...d.data(),
-              artworks,
-              hasArtwork: artworks.length > 0
-            };
+const userData = d.data();
+const artworksSnap = await getDocs(collection(db, "users", d.id, "artworks"));
+let artworks = artworksSnap.docs.map(a => ({ id: a.id, ...a.data() }));
+// Fall back to legacy artworkBase64/artworkImageUrl on the user doc
+if (artworks.length === 0 && (userData.artworkBase64 || userData.artworkImageUrl)) {
+  artworks = [{
+    id: "legacy",
+    title: userData.artworkFile?.replace(/_/g, " ").replace(/\.jpg$/i, "") || "Artwork",
+    imageUrl: userData.artworkImageUrl || userData.artworkBase64 || null,
+    medium: "Unknown", year: "", size: "",
+    color1: "#c9952d", color2: "#c94b2d", shape: "lines",
+    isLegacy: true
+  }];
+}
+return { uid: d.id, ...userData, artworks, hasArtwork: artworks.length > 0 };
+
           })
         );
         setUsers(usersData);
