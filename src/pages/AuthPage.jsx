@@ -84,6 +84,10 @@ export default function AuthPage({ setUser }) {
         const liked = likesSnap.docs
           .filter(d => d.data().from === firebaseUser.uid)
           .map(d => d.data().to);
+       
+          // Load artworks from subcollection
+        const artworksSnap = await getDocs(collection(db, "users", firebaseUser.uid, "artworks"));
+        const artworks = artworksSnap.docs.map(d => ({ id: d.id, ...d.data() }));
 
         setUser({
           uid: firebaseUser.uid,
@@ -93,7 +97,7 @@ export default function AuthPage({ setUser }) {
           location: profile.location || "Somewhere beautiful",
           role: profile.role || "artist",
           artworkImageUrl: profile.artworkImageUrl || profile.artworkBase64 || null,
-          artworks: [],
+          artworks,
           matches,
           liked,
           passed: []
