@@ -35,7 +35,7 @@ export default function MatchesPage({ user }) {
   };
 
   // Helper — get the best available image for a match
-  const getImage = (art) => art?.artworkBase64 || art?.imageUrl || null;
+  const getImage = (art) => art?.imageUrl || null;
 
   return (
     <div style={{ paddingTop: 80, minHeight: "100vh", padding: "96px 0 0" }}>

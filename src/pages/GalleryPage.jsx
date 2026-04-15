@@ -1,6 +1,7 @@
 import { useState, useRef } from "react";
-import { db } from "../firebase";
+import { db, storage } from "../firebase";
 import { doc, setDoc, addDoc, collection, deleteDoc } from "firebase/firestore";
+import { ref as storageRef, uploadBytes, getDownloadURL } from "firebase/storage";
 import ArtSVG from "../components/ArtSVG";
 import { Field, FieldArea } from "../components/Fields";
 import { RADIUS } from "../styles/theme";
@@ -8,8 +9,9 @@ import { RADIUS } from "../styles/theme";
 export default function GalleryPage({ user, setUser }) {
   const [showUpload, setShowUpload] = useState(false);
   const [editArtwork, setEditArtwork] = useState(null);
-  const [form, setForm] = useState({ title: "", medium: "", size: "", year: String(new Date().getFullYear()), description: "", estimatedValue: "", imageUrl: null });
+  const [form, setForm] = useState({ title: "", medium: "", size: "", year: String(new Date().getFullYear()), description: "", estimatedValue: "" });
   const [editForm, setEditForm] = useState({});
+  const [imageFile, setImageFile] = useState(null);
   const [preview, setPreview] = useState(null);
   const [dragOver, setDragOver] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -64,37 +66,51 @@ export default function GalleryPage({ user, setUser }) {
   const handleFile = file => {
     if (!file) return;
     setImageError("");
-    if (file.size > 1 * 1024 * 1024) {
-      setImageError("Max. image size is 1 MB for the Beta version of the app.");
+    if (file.size > 10 * 1024 * 1024) {
+      setImageError("Max. image size is 10 MB.");
       return;
     }
-    const reader = new FileReader();
-    reader.onload = e => { setPreview(e.target.result); setForm(f => ({ ...f, imageUrl: e.target.result })); };
-    reader.readAsDataURL(file);
+    if (preview) URL.revokeObjectURL(preview);
+    setImageFile(file);
+    setPreview(URL.createObjectURL(file));
   };
 
   const submitArtwork = async () => {
     if (!form.title || !form.medium) return;
-    const colors = [["#c9952d","#c94b2d"],["#1a1a2e","#7a7aac"],["#2d4a3e","#8fa58a"],["#3a3a5c","#c94b2d"],["#1a3a4a","#4a8aaa"]];
-    const [c1,c2] = colors[Math.floor(Math.random()*colors.length)];
-    const shapes = ["lines","triangle","blocks","circle","grid","waves"];
-    const newArtwork = {
-      title: form.title, artist: user.name, location: user.location,
-      medium: form.medium, size: form.size || "Unknown size",
-      year: parseInt(form.year) || 2024, description: form.description,
-      estimatedValue: form.estimatedValue || null, imageUrl: form.imageUrl || null,
-      color1: c1, color2: c2, shape: shapes[Math.floor(Math.random()*shapes.length)],
-      likes: 0, createdAt: new Date()
-    };
+    setSaving(true);
     try {
+      let imageUrl = null;
+      if (imageFile) {
+        const fileRef_ = storageRef(storage, `artworks/${user.uid}/${Date.now()}_${imageFile.name}`);
+        await uploadBytes(fileRef_, imageFile);
+        imageUrl = await getDownloadURL(fileRef_);
+        await setDoc(doc(db, "users", user.uid), { artworkImageUrl: imageUrl }, { merge: true });
+        setUser(u => ({ ...u, artworkImageUrl: imageUrl }));
+      }
+
+      const colors = [["#c9952d","#c94b2d"],["#1a1a2e","#7a7aac"],["#2d4a3e","#8fa58a"],["#3a3a5c","#c94b2d"],["#1a3a4a","#4a8aaa"]];
+      const [c1,c2] = colors[Math.floor(Math.random()*colors.length)];
+      const shapes = ["lines","triangle","blocks","circle","grid","waves"];
+      const newArtwork = {
+        title: form.title, artist: user.name, location: user.location,
+        medium: form.medium, size: form.size || "Unknown size",
+        year: parseInt(form.year) || 2024, description: form.description,
+        estimatedValue: form.estimatedValue || null, imageUrl,
+        color1: c1, color2: c2, shape: shapes[Math.floor(Math.random()*shapes.length)],
+        likes: 0, createdAt: new Date()
+      };
       const docRef = await addDoc(collection(db, "users", user.uid, "artworks"), newArtwork);
       setUser(u => ({ ...u, artworks: [...(u.artworks||[]), { id: docRef.id, ...newArtwork }] }));
-      setForm({ title:"", medium:"", size:"", year: String(new Date().getFullYear()), description:"", estimatedValue:"", imageUrl:null });
+      setForm({ title:"", medium:"", size:"", year: String(new Date().getFullYear()), description:"", estimatedValue:"" });
+      if (preview) URL.revokeObjectURL(preview);
       setPreview(null);
+      setImageFile(null);
       setImageError("");
       setShowUpload(false);
     } catch (err) {
       console.error("Error guardando artwork:", err);
+    } finally {
+      setSaving(false);
     }
   };
 
@@ -164,10 +180,9 @@ export default function GalleryPage({ user, setUser }) {
           <div style={modalBox}>
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 28 }}>
               <h2 style={{ fontFamily: "'Playfair Display',serif", fontSize: "1.7rem", fontWeight: 900 }}>Add Artwork</h2>
-              <button onClick={() => setShowUpload(false)} style={{ background: "none", border: "none", cursor: "pointer", fontSize: "1.2rem", color: "#9e9589" }}>✕</button>
+              <button onClick={() => { if (preview) URL.revokeObjectURL(preview); setPreview(null); setImageFile(null); setShowUpload(false); }} style={{ background: "none", border: "none", cursor: "pointer", fontSize: "1.2rem", color: "#9e9589" }}>✕</button>
             </div>
 
-            {/* Image error — shown prominently above drop zone */}
             {imageError && (
               <div style={{ background: "#c94b2d15", border: "1px solid #c94b2d40", borderRadius: RADIUS, padding: "12px 16px", marginBottom: 16, display: "flex", alignItems: "center", gap: 10 }}>
                 <span style={{ fontSize: "1rem" }}>⚠️</span>
@@ -184,7 +199,7 @@ export default function GalleryPage({ user, setUser }) {
                 : <>
                   <div style={{ fontSize: "2rem", marginBottom: 10 }}>🖼</div>
                   <div style={{ fontSize: "0.73rem", color: "#9e9589", textAlign: "center", lineHeight: 1.7 }}>Drag & drop your artwork image<br /><span style={{ color: "#c94b2d", textDecoration: "underline" }}>or click to browse</span></div>
-                  <div style={{ fontSize: "0.62rem", color: "#9e9589", marginTop: 6 }}>JPG, PNG, WEBP · Max 1MB</div>
+                  <div style={{ fontSize: "0.62rem", color: "#9e9589", marginTop: 6 }}>JPG, PNG, WEBP · Max 10MB</div>
                 </>}
               <input ref={fileRef} type="file" accept="image/*" style={{ display: "none" }} onChange={e => handleFile(e.target.files[0])} />
             </div>
@@ -196,9 +211,9 @@ export default function GalleryPage({ user, setUser }) {
               <Field label="Estimated Value (£)" name="estimatedValue" value={form.estimatedValue} onChange={handle} placeholder="e.g. 400" />
               <div style={{ gridColumn: "1/-1" }}><FieldArea label="Description" name="description" value={form.description} onChange={handle} placeholder="Tell the story behind this piece..." /></div>
             </div>
-            <button onClick={submitArtwork} style={{ width: "100%", background: "#0d0d0d", color: "#f5f0e8", padding: "15px", border: "none", cursor: "pointer", fontSize: "0.72rem", letterSpacing: "0.1em", textTransform: "uppercase", marginTop: 4, borderRadius: RADIUS }}
-              onMouseOver={e => e.target.style.background = "#c94b2d"} onMouseOut={e => e.target.style.background = "#0d0d0d"}>
-              Add to Gallery →
+            <button onClick={submitArtwork} disabled={saving} style={{ width: "100%", background: "#0d0d0d", color: "#f5f0e8", padding: "15px", border: "none", cursor: saving ? "not-allowed" : "pointer", fontSize: "0.72rem", letterSpacing: "0.1em", textTransform: "uppercase", marginTop: 4, borderRadius: RADIUS, opacity: saving ? 0.6 : 1 }}
+              onMouseOver={e => { if (!saving) e.target.style.background = "#c94b2d"; }} onMouseOut={e => { if (!saving) e.target.style.background = "#0d0d0d"; }}>
+              {saving ? "Uploading..." : "Add to Gallery →"}
             </button>
           </div>
         </div>

@@ -72,7 +72,6 @@ export default function AuthPage({ setUser }) {
               otherUid: isUser1 ? data.user2 : data.user1,
               title: otherArtwork?.title || "Artwork",
               artist: otherArtwork?.artist || "Artist",
-              artworkBase64: otherArtwork?.artworkBase64 || null,
               imageUrl: otherArtwork?.imageUrl || null,
               color1: otherArtwork?.color1 || "#c9952d",
               color2: otherArtwork?.color2 || "#c94b2d",
@@ -85,11 +84,7 @@ export default function AuthPage({ setUser }) {
         const liked = likesSnap.docs
           .filter(d => d.data().from === firebaseUser.uid)
           .map(d => d.data().to);
-       
-         // Load artworks from subcollection
-        const artworksSnap = await getDocs(collection(db, "users", firebaseUser.uid, "artworks"));
-        const artworks = artworksSnap.docs.map(d => ({ id: d.id, ...d.data() }));
-        
+
         setUser({
           uid: firebaseUser.uid,
           name: profile.name || firebaseUser.displayName || form.email.split("@")[0],
@@ -97,9 +92,8 @@ export default function AuthPage({ setUser }) {
           bio: profile.bio || "Artist & collector",
           location: profile.location || "Somewhere beautiful",
           role: profile.role || "artist",
-          artworkBase64: profile.artworkBase64 || null,
-          artworkFile: profile.artworkFile || null,
-          artworks,
+          artworkImageUrl: profile.artworkImageUrl || profile.artworkBase64 || null,
+          artworks: [],
           matches,
           liked,
           passed: []
