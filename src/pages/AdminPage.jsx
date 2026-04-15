@@ -35,11 +35,19 @@ export default function AdminPage({ user, setPage }) {
       setLoading(true);
       try {
         const usersSnap = await getDocs(collection(db, "users"));
-        const usersData = usersSnap.docs.map(d => ({
-          uid: d.id,
-          ...d.data(),
-          hasArtwork: !!d.data().artworkBase64
-        }));
+        const usersData = await Promise.all(
+          usersSnap.docs.map(async d => {
+            // Load artworks subcollection for each user
+            const artworksSnap = await getDocs(collection(db, "users", d.id, "artworks"));
+            const artworks = artworksSnap.docs.map(a => ({ id: a.id, ...a.data() }));
+            return {
+              uid: d.id,
+              ...d.data(),
+              artworks,
+              hasArtwork: artworks.length > 0
+            };
+          })
+        );
         setUsers(usersData);
       } catch (err) {
         console.error("Error loading admin data:", err);
@@ -59,6 +67,21 @@ export default function AdminPage({ user, setPage }) {
       if (selectedUser?.uid === uid) setSelectedUser(null);
     } catch (err) {
       console.error("Error deleting user:", err);
+    }
+  };
+
+  // ── Delete a single artwork ────────────────────────────────────────────────
+  const deleteArtwork = async (userUid, artworkId, title) => {
+    if (!window.confirm(`Delete artwork "${title}"?`)) return;
+    try {
+      await deleteDoc(doc(db, "users", userUid, "artworks", artworkId));
+      setUsers(prev => prev.map(u =>
+        u.uid === userUid
+          ? { ...u, artworks: u.artworks.filter(a => a.id !== artworkId), hasArtwork: u.artworks.length > 1 }
+          : u
+      ));
+    } catch (err) {
+      console.error("Error deleting artwork:", err);
     }
   };
 
@@ -97,7 +120,7 @@ export default function AdminPage({ user, setPage }) {
             createdBy: "admin_import"
           });
           results.created.push({ name, email });
-          setUsers(u => [...u, { uid: cred.user.uid, name, email, bio, location, role: "artist", hasArtwork: false }]);
+          setUsers(u => [...u, { uid: cred.user.uid, name, email, bio, location, role: "artist", artworks: [], hasArtwork: false }]);
         } catch (err) {
           results.failed.push({ email, reason: err.message });
         }
@@ -110,16 +133,24 @@ export default function AdminPage({ user, setPage }) {
   };
 
   // ─── Stats ─────────────────────────────────────────────────────────────────
+  const totalArtworks = users.reduce((sum, u) => sum + (u.artworks?.length || 0), 0);
   const stats = [
     { label: "Total Users",        value: users.length },
-    { label: "Users with Artwork",  value: users.filter(u => u.hasArtwork).length },
+    { label: "Total Artworks",     value: totalArtworks },
     { label: "Admins",             value: users.filter(u => u.role === "admin").length },
   ];
 
-  // ─── Filtered list for artworks tab ────────────────────────────────────────
-  const artworkUsers = users.filter(u =>
-    u.hasArtwork && (!selectedUser || u.uid === selectedUser.uid)
-  );
+  // ─── Flat list for artworks tab ─────────────────────────────────────────────
+  const artworkRows = users
+    .flatMap(u =>
+      (u.artworks || []).map(art => ({
+        ...art,
+        userName: u.name,
+        userLocation: u.location,
+        userUid: u.uid
+      }))
+    )
+    .filter(art => !selectedUser || art.userUid === selectedUser.uid);
 
   // ─── Render ────────────────────────────────────────────────────────────────
   return (
@@ -182,7 +213,7 @@ export default function AdminPage({ user, setPage }) {
                     <th>Email</th>
                     <th>Location</th>
                     <th>Role</th>
-                    <th>Artwork</th>
+                    <th>Artworks</th>
                     <th>Actions</th>
                   </tr>
                 </thead>
@@ -204,10 +235,10 @@ export default function AdminPage({ user, setPage }) {
                         {u.hasArtwork ? (
                           <button onClick={() => { setSelectedUser(u); setTab("artworks"); }}
                             style={{ ...btn("#f5f0e8", "#0d0d0d"), fontSize: "0.62rem" }}>
-                            View artwork
+                            {u.artworks.length} artwork{u.artworks.length !== 1 ? "s" : ""}
                           </button>
                         ) : (
-                          <span style={{ fontSize: "0.62rem", color: "#9e9589" }}>No artwork</span>
+                          <span style={{ fontSize: "0.62rem", color: "#9e9589" }}>No artworks</span>
                         )}
                       </td>
                       <td>
@@ -232,7 +263,7 @@ export default function AdminPage({ user, setPage }) {
             {selectedUser && (
               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 20 }}>
                 <div style={{ fontSize: "0.78rem" }}>
-                  Showing artwork by <strong>{selectedUser.name}</strong>
+                  Showing artworks by <strong>{selectedUser.name}</strong>
                 </div>
                 <button onClick={() => setSelectedUser(null)} style={btn("#f5f0e8", "#0d0d0d")}>
                   Show All
@@ -242,6 +273,8 @@ export default function AdminPage({ user, setPage }) {
             <div style={{ background: "white", borderRadius: RADIUS, overflow: "hidden", boxShadow: "0 2px 12px rgba(0,0,0,0.06)" }}>
               {loading ? (
                 <div style={{ padding: 40, textAlign: "center", color: "#9e9589" }}>Loading...</div>
+              ) : artworkRows.length === 0 ? (
+                <div style={{ padding: 40, textAlign: "center", color: "#9e9589" }}>No artworks found.</div>
               ) : (
                 <table className="admin-table">
                   <thead>
@@ -249,32 +282,35 @@ export default function AdminPage({ user, setPage }) {
                       <th>Artwork</th>
                       <th>Artist</th>
                       <th>Location</th>
-                      <th>File</th>
+                      <th>Details</th>
                       <th>Actions</th>
                     </tr>
                   </thead>
                   <tbody>
-                    {artworkUsers.map(u => (
-                      <tr key={u.uid}>
+                    {artworkRows.map(art => (
+                      <tr key={art.id}>
                         <td>
                           <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
                             <div style={{ width: 48, height: 48, borderRadius: RADIUS, overflow: "hidden", flexShrink: 0 }}>
-                              {u.artworkBase64
-                                ? <img src={u.artworkBase64} alt={u.name} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
-                                : <ArtSVG artwork={u} width={48} height={48} />
+                              {art.imageUrl
+                                ? <img src={art.imageUrl} alt={art.title} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                                : <ArtSVG artwork={art} width={48} height={48} />
                               }
                             </div>
                             <div>
-                              <div style={{ fontWeight: 600 }}>{u.artworkFile?.replace(/_/g, " ").replace(".jpg", "") || "Untitled"}</div>
-                              <div style={{ fontSize: "0.62rem", color: "#9e9589" }}>{u.bio?.slice(0, 40)}…</div>
+                              <div style={{ fontWeight: 600 }}>{art.title || "Untitled"}</div>
+                              <div style={{ fontSize: "0.62rem", color: "#9e9589" }}>{art.medium} · {art.year}</div>
                             </div>
                           </div>
                         </td>
-                        <td style={{ color: "#9e9589" }}>{u.name}</td>
-                        <td style={{ color: "#9e9589" }}>{u.location}</td>
-                        <td style={{ color: "#9e9589", fontSize: "0.62rem" }}>{u.artworkFile}</td>
+                        <td style={{ color: "#9e9589" }}>{art.userName}</td>
+                        <td style={{ color: "#9e9589" }}>{art.userLocation}</td>
+                        <td style={{ color: "#9e9589", fontSize: "0.62rem" }}>
+                          {art.size || "—"}
+                          {art.estimatedValue && <span style={{ color: "#c94b2d", marginLeft: 6 }}>£{art.estimatedValue}</span>}
+                        </td>
                         <td>
-                          <button onClick={() => deleteUser(u.uid, u.name)}
+                          <button onClick={() => deleteArtwork(art.userUid, art.id, art.title)}
                             style={btn("#c94b2d15", "#c94b2d")}>
                             Delete
                           </button>
