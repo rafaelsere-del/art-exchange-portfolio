@@ -5,13 +5,13 @@ import { getAuth } from "firebase/auth";
 import { getStorage } from "firebase/storage";
 
 const firebaseConfig = {
-  apiKey: "AIzaSyAp84DkNgq5E3wQECjm9Lbrv17cIsMSf9M",
-  authDomain: "artxart-b2e22.firebaseapp.com",
-  projectId: "artxart-b2e22",
-  storageBucket: "artxart-b2e22.firebasestorage.app",
-  messagingSenderId: "285450020311",
-  appId: "1:285450020311:web:8771d13a26ed2d270f1792",
-  measurementId: "G-TMB1QB1MWF"
+  apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
+  authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN,
+  projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID,
+  storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET,
+  messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID,
+  appId: import.meta.env.VITE_FIREBASE_APP_ID,
+  measurementId: import.meta.env.VITE_FIREBASE_MEASUREMENT_ID
 };
 
 const app = initializeApp(firebaseConfig);
