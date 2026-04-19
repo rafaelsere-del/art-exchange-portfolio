@@ -56,6 +56,8 @@ export default function App() {
       setInviteData({
         valid: !expired && d.status === "pending",
         email: d.email,
+        inviteeName: d.inviteeName || null,
+        personalMessage: d.personalMessage || null,
         reason: expired ? "expired" : d.status === "used" ? "used" : null
       });
     }).finally(() => {

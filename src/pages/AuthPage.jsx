@@ -318,11 +318,18 @@ export default function AuthPage({ setUser, setPage, settings = {}, settingsLoad
           <>
             <div style={{ fontSize: "0.65rem", textTransform: "uppercase", letterSpacing: "0.2em", color: "#5a7a5e", marginBottom: 12 }}>Invitation</div>
             <h2 style={{ fontFamily: "'Playfair Display',serif", fontSize: "1.9rem", fontWeight: 900, marginBottom: 6, letterSpacing: "-0.02em" }}>
-              You've been <em style={{ color: "#c94b2d" }}>invited</em>
+              {inviteData?.inviteeName
+                ? <>Welcome, <em style={{ color: "#c94b2d" }}>{inviteData.inviteeName.split(" ")[0]}</em></>
+                : <>You've been <em style={{ color: "#c94b2d" }}>invited</em></>}
             </h2>
-            <p style={{ fontSize: "0.7rem", color: "#9e9589", marginBottom: 32, lineHeight: 1.7 }}>
-              Complete your account to join the exchange.
+<p style={{ fontSize: "0.7rem", color: "#9e9589", marginBottom: inviteData?.personalMessage ? 16 : 32, lineHeight: 1.7 }}>
+              {inviteData?.personalMessage || "Complete your account to join the exchange."}
             </p>
+            {inviteData?.personalMessage && (
+              <p style={{ fontSize: "0.7rem", color: "#9e9589", marginBottom: 32, lineHeight: 1.7 }}>
+                Complete your account to join the exchange.
+              </p>
+            )}
             <div style={{ marginBottom: 18 }}>
               <label style={{ display: "block", fontSize: "0.62rem", textTransform: "uppercase", letterSpacing: "0.12em", color: "#9e9589", marginBottom: 5 }}>Email</label>
               <input value={inviteData?.email || ""} readOnly
