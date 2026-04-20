@@ -88,7 +88,7 @@ export default function GalleryPage({ user, setUser }) {
         setUser(u => ({ ...u, artworkImageUrl: imageUrl }));
       }
 
-      const colors = [["#c9952d","#c94b2d"],["#1a1a2e","#7a7aac"],["#2d4a3e","#8fa58a"],["#3a3a5c","#c94b2d"],["#1a3a4a","#4a8aaa"]];
+      const colors = [["#c9952d","#b8953a"],["#1a1a2e","#7a7aac"],["#2d4a3e","#8fa58a"],["#3a3a5c","#b8953a"],["#1a3a4a","#4a8aaa"]];
       const [c1,c2] = colors[Math.floor(Math.random()*colors.length)];
       const shapes = ["lines","triangle","blocks","circle","grid","waves"];
       const newArtwork = {
@@ -115,10 +115,10 @@ export default function GalleryPage({ user, setUser }) {
   };
 
   const modalOverlay = { position: "fixed", inset: 0, background: "rgba(13,13,13,0.75)", zIndex: 300, display: "flex", alignItems: "center", justifyContent: "center" };
-  const modalBox = { background: "#f5f0e8", width: "min(560px, 95vw)", maxHeight: "90vh", overflowY: "auto", padding: "44px 38px", borderRadius: RADIUS };
+  const modalBox = { background: "#f7f5f0", width: "min(560px, 95vw)", maxHeight: "90vh", overflowY: "auto", padding: "44px 38px", borderRadius: RADIUS };
 
   return (
-    <div style={{ paddingTop: 80, minHeight: "100vh", padding: "96px 24px 60px" }}>
+    <div style={{ paddingTop: 80, minHeight: "100vh", padding: "96px 24px 60px", background: "white" }}>
       <style>{`
         @media (max-width: 600px) {
           .gallery-header { flex-direction: column !important; align-items: flex-start !important; gap: 16px !important; }
@@ -129,23 +129,23 @@ export default function GalleryPage({ user, setUser }) {
       `}</style>
       <div className="gallery-header" style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-end", marginBottom: 44 }}>
         <div>
-          <div style={{ fontSize: "0.65rem", textTransform: "uppercase", letterSpacing: "0.2em", color: "#c94b2d", marginBottom: 8 }}>My Gallery</div>
-          <h1 style={{ fontFamily: "'Playfair Display',serif", fontSize: "2.6rem", fontWeight: 900, letterSpacing: "-0.02em", lineHeight: 1.1 }}>
-            {user.name}'s <em style={{ color: "#c94b2d" }}>Collection</em>
+          <div style={{ fontSize: "0.65rem", textTransform: "uppercase", letterSpacing: "0.2em", color: "#b8953a", marginBottom: 8 }}>My Gallery</div>
+          <h1 style={{ fontFamily: "'Cormorant Garamond',serif", fontSize: "2.6rem", fontWeight: 600, letterSpacing: "-0.02em", lineHeight: 1.1 }}>
+            {user.name}'s <em style={{ color: "#b8953a" }}>Collection</em>
           </h1>
         </div>
-        <button className="gallery-upload-btn" onClick={() => setShowUpload(true)} style={{ background: "#c94b2d", color: "white", padding: "13px 26px", border: "none", cursor: "pointer", fontSize: "0.72rem", letterSpacing: "0.1em", textTransform: "uppercase", borderRadius: RADIUS, flexShrink: 0 }}
-          onMouseOver={e => e.target.style.background = "#e8613e"} onMouseOut={e => e.target.style.background = "#c94b2d"}>
+        <button className="gallery-upload-btn" onClick={() => setShowUpload(true)} style={{ background: "#b8953a", color: "white", padding: "13px 26px", border: "none", cursor: "pointer", fontSize: "0.72rem", letterSpacing: "0.1em", textTransform: "uppercase", borderRadius: RADIUS, flexShrink: 0 }}
+          onMouseOver={e => e.target.style.background = "#e8613e"} onMouseOut={e => e.target.style.background = "#b8953a"}>
           + Upload Artwork
         </button>
       </div>
 
       {(user.artworks||[]).length === 0 ? (
-        <div style={{ textAlign: "center", padding: "80px 0", color: "#9e9589" }}>
+        <div style={{ textAlign: "center", padding: "80px 0", color: "#6a7260" }}>
           <div style={{ fontSize: "3rem", marginBottom: 16 }}>🎨</div>
-          <p style={{ fontFamily: "'Playfair Display',serif", fontSize: "1.3rem", fontStyle: "italic", marginBottom: 10 }}>Your gallery is empty</p>
+          <p style={{ fontFamily: "'Cormorant Garamond',serif", fontSize: "1.3rem", fontStyle: "italic", marginBottom: 10 }}>Your gallery is empty</p>
           <p style={{ fontSize: "0.75rem", lineHeight: 1.8, marginBottom: 24 }}>Upload your first artwork to start trading with artists around the world.</p>
-          <button onClick={() => setShowUpload(true)} style={{ background: "#0d0d0d", color: "#f5f0e8", padding: "13px 28px", border: "none", cursor: "pointer", fontSize: "0.72rem", letterSpacing: "0.1em", textTransform: "uppercase", borderRadius: RADIUS }}>
+          <button onClick={() => setShowUpload(true)} style={{ background: "#14120e", color: "#f7f5f0", padding: "13px 28px", border: "none", cursor: "pointer", fontSize: "0.72rem", letterSpacing: "0.1em", textTransform: "uppercase", borderRadius: RADIUS }}>
             Upload Your First Piece
           </button>
         </div>
@@ -160,12 +160,12 @@ export default function GalleryPage({ user, setUser }) {
               </div>
               <div style={{ padding: "14px 16px" }}>
                 <div style={{ fontSize: "0.58rem", textTransform: "uppercase", letterSpacing: "0.14em", color: "#5a7a5e", marginBottom: 4 }}>● Available for Trade</div>
-                <div style={{ fontFamily: "'Playfair Display',serif", fontSize: "0.98rem", fontWeight: 700, marginBottom: 4 }}>{art.title}</div>
-                <div style={{ fontSize: "0.62rem", color: "#9e9589" }}>{art.medium} · {art.size} · {art.year}</div>
-                {art.estimatedValue && <div style={{ fontSize: "0.62rem", color: "#c94b2d", marginTop: 4 }}>Est. £{art.estimatedValue}</div>}
-                <button onClick={() => openEdit(art)} style={{ marginTop: 10, background: "none", border: "1px solid rgba(0,0,0,0.13)", cursor: "pointer", fontSize: "0.6rem", letterSpacing: "0.1em", textTransform: "uppercase", padding: "5px 10px", color: "#9e9589", width: "100%", borderRadius: RADIUS }}
-                  onMouseOver={e => { e.target.style.borderColor = "#c94b2d"; e.target.style.color = "#c94b2d"; }}
-                  onMouseOut={e => { e.target.style.borderColor = "rgba(0,0,0,0.13)"; e.target.style.color = "#9e9589"; }}>
+                <div style={{ fontFamily: "'Cormorant Garamond',serif", fontSize: "0.98rem", fontWeight: 500, marginBottom: 4 }}>{art.title}</div>
+                <div style={{ fontSize: "0.62rem", color: "#6a7260" }}>{art.medium} · {art.size} · {art.year}</div>
+                {art.estimatedValue && <div style={{ fontSize: "0.62rem", color: "#b8953a", marginTop: 4 }}>Est. £{art.estimatedValue}</div>}
+                <button onClick={() => openEdit(art)} style={{ marginTop: 10, background: "none", border: "1px solid rgba(0,0,0,0.13)", cursor: "pointer", fontSize: "0.6rem", letterSpacing: "0.1em", textTransform: "uppercase", padding: "5px 10px", color: "#6a7260", width: "100%", borderRadius: RADIUS }}
+                  onMouseOver={e => { e.target.style.borderColor = "#b8953a"; e.target.style.color = "#b8953a"; }}
+                  onMouseOut={e => { e.target.style.borderColor = "rgba(0,0,0,0.13)"; e.target.style.color = "#6a7260"; }}>
                   Edit
                 </button>
               </div>
@@ -179,27 +179,27 @@ export default function GalleryPage({ user, setUser }) {
         <div style={modalOverlay} onClick={e => e.target === e.currentTarget && setShowUpload(false)}>
           <div style={modalBox}>
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 28 }}>
-              <h2 style={{ fontFamily: "'Playfair Display',serif", fontSize: "1.7rem", fontWeight: 900 }}>Add Artwork</h2>
-              <button onClick={() => { if (preview) URL.revokeObjectURL(preview); setPreview(null); setImageFile(null); setShowUpload(false); }} style={{ background: "none", border: "none", cursor: "pointer", fontSize: "1.2rem", color: "#9e9589" }}>✕</button>
+              <h2 style={{ fontFamily: "'Cormorant Garamond',serif", fontSize: "1.7rem", fontWeight: 600 }}>Add Artwork</h2>
+              <button onClick={() => { if (preview) URL.revokeObjectURL(preview); setPreview(null); setImageFile(null); setShowUpload(false); }} style={{ background: "none", border: "none", cursor: "pointer", fontSize: "1.2rem", color: "#6a7260" }}>✕</button>
             </div>
 
             {imageError && (
-              <div style={{ background: "#c94b2d15", border: "1px solid #c94b2d40", borderRadius: RADIUS, padding: "12px 16px", marginBottom: 16, display: "flex", alignItems: "center", gap: 10 }}>
+              <div style={{ background: "#b8953a15", border: "1px solid #b8953a40", borderRadius: RADIUS, padding: "12px 16px", marginBottom: 16, display: "flex", alignItems: "center", gap: 10 }}>
                 <span style={{ fontSize: "1rem" }}>⚠️</span>
-                <p style={{ fontSize: "0.72rem", color: "#c94b2d", margin: 0, lineHeight: 1.5 }}>{imageError}</p>
+                <p style={{ fontSize: "0.72rem", color: "#b8953a", margin: 0, lineHeight: 1.5 }}>{imageError}</p>
               </div>
             )}
 
             <div onDragOver={e => { e.preventDefault(); setDragOver(true); }} onDragLeave={() => setDragOver(false)}
               onDrop={e => { e.preventDefault(); setDragOver(false); handleFile(e.dataTransfer.files[0]); }}
               onClick={() => fileRef.current.click()}
-              style={{ width: "100%", height: 210, border: `2px dashed ${imageError ? "#c94b2d" : dragOver ? "#c94b2d" : "rgba(0,0,0,0.18)"}`, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", cursor: "pointer", marginBottom: 24, background: dragOver ? "rgba(201,75,45,0.04)" : "transparent", position: "relative", overflow: "hidden", transition: "border-color 0.2s, background 0.2s", borderRadius: RADIUS }}>
+              style={{ width: "100%", height: 210, border: `2px dashed ${imageError ? "#b8953a" : dragOver ? "#b8953a" : "rgba(0,0,0,0.18)"}`, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", cursor: "pointer", marginBottom: 24, background: dragOver ? "rgba(201,75,45,0.04)" : "transparent", position: "relative", overflow: "hidden", transition: "border-color 0.2s, background 0.2s", borderRadius: RADIUS }}>
               {preview
                 ? <img src={preview} alt="preview" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
                 : <>
                   <div style={{ fontSize: "2rem", marginBottom: 10 }}>🖼</div>
-                  <div style={{ fontSize: "0.73rem", color: "#9e9589", textAlign: "center", lineHeight: 1.7 }}>Drag & drop your artwork image<br /><span style={{ color: "#c94b2d", textDecoration: "underline" }}>or click to browse</span></div>
-                  <div style={{ fontSize: "0.62rem", color: "#9e9589", marginTop: 6 }}>JPG, PNG, WEBP · Max 10MB</div>
+                  <div style={{ fontSize: "0.73rem", color: "#6a7260", textAlign: "center", lineHeight: 1.7 }}>Drag & drop your artwork image<br /><span style={{ color: "#b8953a", textDecoration: "underline" }}>or click to browse</span></div>
+                  <div style={{ fontSize: "0.62rem", color: "#6a7260", marginTop: 6 }}>JPG, PNG, WEBP · Max 10MB</div>
                 </>}
               <input ref={fileRef} type="file" accept="image/*" style={{ display: "none" }} onChange={e => handleFile(e.target.files[0])} />
             </div>
@@ -211,8 +211,8 @@ export default function GalleryPage({ user, setUser }) {
               <Field label="Estimated Value (£)" name="estimatedValue" value={form.estimatedValue} onChange={handle} placeholder="e.g. 400" />
               <div style={{ gridColumn: "1/-1" }}><FieldArea label="Description" name="description" value={form.description} onChange={handle} placeholder="Tell the story behind this piece..." /></div>
             </div>
-            <button onClick={submitArtwork} disabled={saving} style={{ width: "100%", background: "#0d0d0d", color: "#f5f0e8", padding: "15px", border: "none", cursor: saving ? "not-allowed" : "pointer", fontSize: "0.72rem", letterSpacing: "0.1em", textTransform: "uppercase", marginTop: 4, borderRadius: RADIUS, opacity: saving ? 0.6 : 1 }}
-              onMouseOver={e => { if (!saving) e.target.style.background = "#c94b2d"; }} onMouseOut={e => { if (!saving) e.target.style.background = "#0d0d0d"; }}>
+            <button onClick={submitArtwork} disabled={saving} style={{ width: "100%", background: "#14120e", color: "#f7f5f0", padding: "15px", border: "none", cursor: saving ? "not-allowed" : "pointer", fontSize: "0.72rem", letterSpacing: "0.1em", textTransform: "uppercase", marginTop: 4, borderRadius: RADIUS, opacity: saving ? 0.6 : 1 }}
+              onMouseOver={e => { if (!saving) e.target.style.background = "#b8953a"; }} onMouseOut={e => { if (!saving) e.target.style.background = "#14120e"; }}>
               {saving ? "Uploading..." : "Add to Gallery →"}
             </button>
           </div>
@@ -224,8 +224,8 @@ export default function GalleryPage({ user, setUser }) {
         <div style={modalOverlay} onClick={e => e.target === e.currentTarget && setEditArtwork(null)}>
           <div style={modalBox}>
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 28 }}>
-              <h2 style={{ fontFamily: "'Playfair Display',serif", fontSize: "1.7rem", fontWeight: 900 }}>Edit Artwork</h2>
-              <button onClick={() => setEditArtwork(null)} style={{ background: "none", border: "none", cursor: "pointer", fontSize: "1.2rem", color: "#9e9589" }}>✕</button>
+              <h2 style={{ fontFamily: "'Cormorant Garamond',serif", fontSize: "1.7rem", fontWeight: 600 }}>Edit Artwork</h2>
+              <button onClick={() => setEditArtwork(null)} style={{ background: "none", border: "none", cursor: "pointer", fontSize: "1.2rem", color: "#6a7260" }}>✕</button>
             </div>
             {editArtwork.imageUrl && (
               <div style={{ width: "100%", height: 180, overflow: "hidden", marginBottom: 24, borderRadius: RADIUS }}>
@@ -241,13 +241,13 @@ export default function GalleryPage({ user, setUser }) {
               <div style={{ gridColumn: "1/-1" }}><FieldArea label="Description" name="description" value={editForm.description} onChange={handleEdit} placeholder="Tell the story behind this piece..." /></div>
             </div>
             <div style={{ display: "flex", gap: 10, marginTop: 4 }}>
-              <button onClick={updateArtwork} disabled={saving} style={{ flex: 1, background: "#0d0d0d", color: "#f5f0e8", padding: "15px", border: "none", cursor: "pointer", fontSize: "0.72rem", letterSpacing: "0.1em", textTransform: "uppercase", opacity: saving ? 0.6 : 1, borderRadius: RADIUS }}
-                onMouseOver={e => e.target.style.background = "#c94b2d"} onMouseOut={e => e.target.style.background = "#0d0d0d"}>
+              <button onClick={updateArtwork} disabled={saving} style={{ flex: 1, background: "#14120e", color: "#f7f5f0", padding: "15px", border: "none", cursor: "pointer", fontSize: "0.72rem", letterSpacing: "0.1em", textTransform: "uppercase", opacity: saving ? 0.6 : 1, borderRadius: RADIUS }}
+                onMouseOver={e => e.target.style.background = "#b8953a"} onMouseOut={e => e.target.style.background = "#14120e"}>
                 {saving ? "Saving..." : "Save Changes →"}
               </button>
-              <button onClick={deleteArtwork} style={{ background: "transparent", color: "#c94b2d", padding: "15px 18px", border: "1.5px solid #c94b2d", cursor: "pointer", fontSize: "0.72rem", letterSpacing: "0.08em", textTransform: "uppercase", borderRadius: RADIUS }}
-                onMouseOver={e => { e.target.style.background = "#c94b2d"; e.target.style.color = "white"; }}
-                onMouseOut={e => { e.target.style.background = "transparent"; e.target.style.color = "#c94b2d"; }}>
+              <button onClick={deleteArtwork} style={{ background: "transparent", color: "#b8953a", padding: "15px 18px", border: "1.5px solid #b8953a", cursor: "pointer", fontSize: "0.72rem", letterSpacing: "0.08em", textTransform: "uppercase", borderRadius: RADIUS }}
+                onMouseOver={e => { e.target.style.background = "#b8953a"; e.target.style.color = "white"; }}
+                onMouseOut={e => { e.target.style.background = "transparent"; e.target.style.color = "#b8953a"; }}>
                 Delete
               </button>
             </div>

@@ -5,8 +5,8 @@ import ArtSVG from "../components/ArtSVG";
 import { RADIUS } from "../styles/theme";
 
 const MOCK_ARTWORKS = [
-  { id: 1, title: "Golden Hour Study", artist: "Sofia Kwan", color1: "#c9952d", color2: "#c94b2d", shape: "lines" },
-  { id: 2, title: "Descent", artist: "Elton Marsh", color1: "#1a1a2e", color2: "#c94b2d", shape: "triangle" },
+  { id: 1, title: "Golden Hour Study", artist: "Sofia Kwan", color1: "#c9952d", color2: "#b8953a", shape: "lines" },
+  { id: 2, title: "Descent", artist: "Elton Marsh", color1: "#1a1a2e", color2: "#b8953a", shape: "triangle" },
 ];
 
 export default function SwipePage({ user, setUser, setPage }) {
@@ -89,7 +89,7 @@ export default function SwipePage({ user, setUser, setPage }) {
               location: art.location,
               imageUrl: otherImageUrl,
               color1: "#c9952d",
-              color2: "#c94b2d",
+              color2: "#b8953a",
               shape: "lines"
             }]
           }));
@@ -168,31 +168,61 @@ export default function SwipePage({ user, setUser, setPage }) {
   if (loading) return (
     <div style={{ minHeight: "100vh", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center" }}>
       <div style={{ fontSize: "2rem", marginBottom: 16 }}>✦</div>
-      <p style={{ fontFamily: "'Playfair Display',serif", fontSize: "1.2rem", fontStyle: "italic", color: "#9e9589" }}>Loading artworks...</p>
+      <p style={{ fontFamily: "'Cormorant Garamond',serif", fontSize: "1.2rem", fontStyle: "italic", color: "#6a7260" }}>Loading artworks...</p>
     </div>
   );
 
   if (deck.length === 0) return (
     <div style={{ minHeight: "100vh", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", paddingTop: 80 }}>
       <div style={{ fontSize: "3rem", marginBottom: 16 }}>✦</div>
-      <p style={{ fontFamily: "'Playfair Display',serif", fontSize: "1.5rem", fontStyle: "italic", marginBottom: 12 }}>You've seen everything</p>
-      <p style={{ fontSize: "0.73rem", color: "#9e9589", marginBottom: 24 }}>Check back soon for new artworks</p>
-      <button onClick={() => setPage("matches")} style={{ background: "#0d0d0d", color: "#f5f0e8", padding: "13px 26px", border: "none", cursor: "pointer", fontSize: "0.7rem", letterSpacing: "0.1em", textTransform: "uppercase", borderRadius: RADIUS }}>
+      <p style={{ fontFamily: "'Cormorant Garamond',serif", fontSize: "1.5rem", fontStyle: "italic", marginBottom: 12 }}>You've seen everything</p>
+      <p style={{ fontSize: "0.73rem", color: "#6a7260", marginBottom: 24 }}>Check back soon for new artworks</p>
+      <button onClick={() => setPage("matches")} style={{ background: "#14120e", color: "#f7f5f0", padding: "13px 26px", border: "none", cursor: "pointer", fontSize: "0.7rem", letterSpacing: "0.1em", textTransform: "uppercase", borderRadius: RADIUS }}>
         See Your Matches
       </button>
     </div>
   );
 
   return (
-    <div style={{ minHeight: "100vh", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: "96px 20px 40px" }}>
-      <div style={{ textAlign: "center", marginBottom: 28 }}>
-        <div style={{ fontSize: "0.62rem", textTransform: "uppercase", letterSpacing: "0.2em", color: "#9e9589", marginBottom: 8 }}>Discover</div>
-        <h2 style={{ fontFamily: "'Playfair Display',serif", fontSize: "2rem", fontWeight: 900, letterSpacing: "-0.02em" }}>
-          Swipe to <em style={{ color: "#c94b2d" }}>collect</em>
+    <div style={{ minHeight: "100vh", background: "white", display: "flex", flexDirection: "column", alignItems: "center", paddingTop: 58 }}>
+      <style>{`
+        .swipe-stack {
+          position: relative;
+          width: 100%;
+          height: calc(100vh - 240px);
+        }
+        @media (min-width: 800px) {
+          .swipe-stack {
+            width: 420px;
+            height: 600px;
+          }
+        }
+        .swipe-card-img {
+          flex: 1;
+          overflow: hidden;
+          position: relative;
+          background: #f7f5f0;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          min-height: 0;
+        }
+        .swipe-card-img img {
+          width: 100%;
+          height: 100%;
+          object-fit: contain;
+          display: block;
+        }
+      `}</style>
+
+      <div style={{ textAlign: "center", padding: "24px 20px 16px" }}>
+        <div style={{ fontSize: "0.62rem", textTransform: "uppercase", letterSpacing: "0.2em", color: "#6a7260", marginBottom: 8 }}>Discover</div>
+        <h2 style={{ fontFamily: "'Cormorant Garamond',serif", fontSize: "2rem", fontWeight: 600, letterSpacing: "-0.02em" }}>
+          Swipe to <em style={{ color: "#b8953a" }}>collect</em>
         </h2>
       </div>
 
-      <div style={{ position: "relative", width: "90%", maxWidth: 350, height: "60vh", marginBottom: 28 }}>
+      <div className="swipe-stack">
         {deck.slice(0, 3).reverse().map((art, ri) => {
           const isTop = ri === Math.min(deck.length, 3) - 1;
           const offset = Math.min(deck.length, 3) - 1 - ri;
@@ -202,10 +232,12 @@ export default function SwipePage({ user, setUser, setPage }) {
               onMouseDown={isTop ? onStart : undefined}
               onTouchStart={isTop ? onStart : undefined}
               style={{
-                position: "absolute", inset: 0, background: "white",
+                position: "absolute", inset: 0,
+                background: "white",
                 boxShadow: "0 20px 60px rgba(0,0,0,0.18), 0 4px 12px rgba(0,0,0,0.1)",
                 overflow: "hidden", cursor: isTop ? "grab" : "default",
-                borderRadius: RADIUS,
+                borderRadius: 16,
+                display: "flex", flexDirection: "column",
                 transform: animDir && isTop
                   ? `translateX(${animDir === "right" ? 150 : -150}%) rotate(${animDir === "right" ? 22 : -22}deg)`
                   : `rotate(${rotations[offset]}deg) translateY(${offset * 10}px)`,
@@ -216,28 +248,28 @@ export default function SwipePage({ user, setUser, setPage }) {
               }}>
               {isTop && <>
                 <div ref={labelWantRef} style={{ position: "absolute", top: 20, left: 16, padding: "5px 13px", border: "2px solid #5a7a5e", color: "#5a7a5e", fontSize: "0.7rem", letterSpacing: "0.12em", textTransform: "uppercase", transform: "rotate(-8deg)", opacity: 0, zIndex: 10, pointerEvents: "none", background: "rgba(255,255,255,0.92)", borderRadius: RADIUS }}>WANT</div>
-                <div ref={labelPassRef} style={{ position: "absolute", top: 20, right: 16, padding: "5px 13px", border: "2px solid #c94b2d", color: "#c94b2d", fontSize: "0.7rem", letterSpacing: "0.12em", textTransform: "uppercase", transform: "rotate(8deg)", opacity: 0, zIndex: 10, pointerEvents: "none", background: "rgba(255,255,255,0.92)", borderRadius: RADIUS }}>PASS</div>
+                <div ref={labelPassRef} style={{ position: "absolute", top: 20, right: 16, padding: "5px 13px", border: "2px solid #b8953a", color: "#b8953a", fontSize: "0.7rem", letterSpacing: "0.12em", textTransform: "uppercase", transform: "rotate(8deg)", opacity: 0, zIndex: 10, pointerEvents: "none", background: "rgba(255,255,255,0.92)", borderRadius: RADIUS }}>PASS</div>
               </>}
-              <div style={{ height: 295, overflow: "hidden", pointerEvents: "none" }}>
+              <div className="swipe-card-img" style={{ pointerEvents: "none" }}>
                 {(art.artworkImageUrl || art.artworkBase64)
-                  ? <img src={art.artworkImageUrl || art.artworkBase64} alt={art.name} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
-                  : <ArtSVG artwork={art} width={320} height={295} />
+                  ? <img src={art.artworkImageUrl || art.artworkBase64} alt={art.name} />
+                  : <ArtSVG artwork={art} width={400} height={400} />
                 }
               </div>
-              <div style={{ padding: "14px 18px" }}>
-                <div style={{ fontSize: "0.6rem", textTransform: "uppercase", letterSpacing: "0.14em", color: "#9e9589", marginBottom: 4 }}>{art.name} — {art.location}</div>
-                <div style={{ fontFamily: "'Playfair Display',serif", fontSize: "1.1rem", fontWeight: 700, marginBottom: 6 }}>
+              <div style={{ padding: "14px 18px", flexShrink: 0 }}>
+                <div style={{ fontSize: "0.6rem", textTransform: "uppercase", letterSpacing: "0.14em", color: "#6a7260", marginBottom: 4 }}>{art.name} — {art.location}</div>
+                <div style={{ fontFamily: "'Cormorant Garamond',serif", fontSize: "1.1rem", fontWeight: 500, marginBottom: 6 }}>
                   {art.artworkFile?.replace(/_/g, " ").replace(".jpg", "") || art.name}
                 </div>
-                <div style={{ fontSize: "0.6rem", color: "#9e9589" }}>{art.bio?.slice(0, 80)}...</div>
+                <div style={{ fontSize: "0.6rem", color: "#6a7260" }}>{art.bio?.slice(0, 80)}...</div>
               </div>
             </div>
           );
         })}
       </div>
 
-      <div style={{ display: "flex", gap: 22, alignItems: "center" }}>
-        {[["✕", "#c94b2d", "Pass", "left", 58], ["+", "#9e9589", "Info", null, 44], ["♡", "#5a7a5e", "Want", "right", 58]].map(([icon, color, title, dir, size]) => (
+      <div style={{ display: "flex", gap: 22, alignItems: "center", padding: "20px 0" }}>
+        {[["✕", "#b8953a", "Pass", "left", 58], ["+", "#6a7260", "Info", null, 44], ["♡", "#5a7a5e", "Want", "right", 58]].map(([icon, color, title, dir, size]) => (
           <button key={title} onClick={() => dir && doSwipe(dir)} title={title}
             style={{ width: size, height: size, borderRadius: "50%", border: `1.5px solid ${color}`, background: "white", color, fontSize: size > 50 ? "1.3rem" : "0.9rem", display: "flex", alignItems: "center", justifyContent: "center", boxShadow: "0 4px 16px rgba(0,0,0,0.1)", transition: "all 0.2s", cursor: "pointer" }}
             onMouseOver={e => { e.currentTarget.style.background = color; e.currentTarget.style.color = "white"; e.currentTarget.style.transform = "scale(1.1)"; }}
@@ -246,11 +278,11 @@ export default function SwipePage({ user, setUser, setPage }) {
           </button>
         ))}
       </div>
-      <p style={{ marginTop: 20, fontSize: "0.62rem", color: "#9e9589" }}>{deck.length} artwork{deck.length !== 1 ? "s" : ""} remaining</p>
+      <p style={{ fontSize: "0.62rem", color: "#6a7260", paddingBottom: 20 }}>{deck.length} artwork{deck.length !== 1 ? "s" : ""} remaining</p>
 
       {matchArt && (
         <div style={{ position: "fixed", inset: 0, background: "rgba(13,13,13,0.92)", zIndex: 400, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center" }}>
-          <div style={{ fontFamily: "'Playfair Display',serif", fontSize: "3.2rem", color: "white", fontWeight: 900, fontStyle: "italic", marginBottom: 8 }}>It's a Match</div>
+          <div style={{ fontFamily: "'Cormorant Garamond',serif", fontSize: "3.2rem", color: "white", fontWeight: 600, fontStyle: "italic", marginBottom: 8 }}>It's a Match</div>
           <p style={{ fontSize: "0.68rem", color: "rgba(255,255,255,0.5)", letterSpacing: "0.2em", textTransform: "uppercase", marginBottom: 36 }}>
             {matchArt.name} also wants to trade
           </p>
@@ -266,7 +298,7 @@ export default function SwipePage({ user, setUser, setPage }) {
           </div>
           <div style={{ display: "flex", gap: 12 }}>
             <button onClick={() => { setMatchArt(null); setPage("matches"); }}
-              style={{ background: "#c94b2d", color: "white", padding: "13px 26px", border: "none", cursor: "pointer", fontSize: "0.72rem", letterSpacing: "0.1em", textTransform: "uppercase", borderRadius: RADIUS }}>
+              style={{ background: "#b8953a", color: "white", padding: "13px 26px", border: "none", cursor: "pointer", fontSize: "0.72rem", letterSpacing: "0.1em", textTransform: "uppercase", borderRadius: RADIUS }}>
               Start the Conversation
             </button>
             <button onClick={() => setMatchArt(null)}

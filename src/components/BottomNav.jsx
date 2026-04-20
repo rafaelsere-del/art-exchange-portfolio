@@ -36,16 +36,16 @@ export default function BottomNav({ page, setPage, user }) {
               <span style={{
                 fontSize: "0.55rem", letterSpacing: "0.1em",
                 textTransform: "uppercase",
-                color: isActive ? "#c94b2d" : "#9e9589",
-                fontFamily: "'DM Mono', monospace",
+                color: isActive ? "#b8953a" : "#6a7260",
+                fontFamily: "'DM Sans', monospace",
                 fontWeight: isActive ? 600 : 400
               }}>{item.label}</span>
               {item.page === "matches" && matchCount > 0 && (
                 <span style={{
                   position: "absolute", top: 6, left: "calc(50% + 6px)",
-                  background: "#f97316", color: "white",
+                  background: "#b8953a", color: "white",
                   borderRadius: "50%", width: 15, height: 15,
-                  fontSize: "0.48rem", fontWeight: 700,
+                  fontSize: "0.48rem", fontWeight: 500,
                   display: "flex", alignItems: "center", justifyContent: "center"
                 }}>
                   {matchCount > 9 ? "9+" : matchCount}
@@ -55,7 +55,7 @@ export default function BottomNav({ page, setPage, user }) {
                 <span style={{
                   position: "absolute", top: 0, left: "50%",
                   transform: "translateX(-50%)",
-                  width: 24, height: 2, background: "#c94b2d"
+                  width: 24, height: 2, background: "#b8953a"
                 }} />
               )}
             </button>

@@ -59,7 +59,7 @@ export default function AuthPage({ setUser, setPage, settings = {}, settingsLoad
             artist: otherArtwork?.artist || "Artist",
             imageUrl: otherArtwork?.imageUrl || null,
             color1: otherArtwork?.color1 || "#c9952d",
-            color2: otherArtwork?.color2 || "#c94b2d",
+            color2: otherArtwork?.color2 || "#b8953a",
             shape: otherArtwork?.shape || "lines",
           };
         });
@@ -202,50 +202,50 @@ export default function AuthPage({ setUser, setPage, settings = {}, settingsLoad
     return (
       <div style={{ minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center", padding: "80px 20px" }}>
         <div style={{ width: 420, textAlign: "center" }}>
-          <div style={{ fontSize: "0.65rem", textTransform: "uppercase", letterSpacing: "0.2em", color: "#c94b2d", marginBottom: 16 }}>Welcome</div>
-          <h2 style={{ fontFamily: "'Playfair Display',serif", fontSize: "2.4rem", fontWeight: 900, letterSpacing: "-0.02em", marginBottom: 12 }}>
-            The Art <em style={{ color: "#c94b2d" }}>Exchange</em>
+          <div style={{ fontSize: "0.65rem", textTransform: "uppercase", letterSpacing: "0.2em", color: "#b8953a", marginBottom: 16 }}>Welcome</div>
+          <h2 style={{ fontFamily: "'Cormorant Garamond',serif", fontSize: "2.4rem", fontWeight: 600, letterSpacing: "-0.02em", marginBottom: 12 }}>
+            The Art <em style={{ color: "#b8953a" }}>Exchange</em>
           </h2>
-          <p style={{ fontSize: "0.75rem", color: "#9e9589", lineHeight: 1.8, marginBottom: 44, maxWidth: 320, margin: "0 auto 44px" }}>
+          <p style={{ fontSize: "0.75rem", color: "#6a7260", lineHeight: 1.8, marginBottom: 44, maxWidth: 320, margin: "0 auto 44px" }}>
             Trade your artwork directly with other artists. No galleries. No fees.
           </p>
 
           {inviteData && !inviteData.valid && (
-            <div style={{ background: "#c94b2d12", border: "1px solid #c94b2d30", borderRadius: RADIUS, padding: "12px 16px", marginBottom: 20, fontSize: "0.72rem", color: "#c94b2d", lineHeight: 1.6 }}>
+            <div style={{ background: "#b8953a12", border: "1px solid #b8953a30", borderRadius: RADIUS, padding: "12px 16px", marginBottom: 20, fontSize: "0.72rem", color: "#b8953a", lineHeight: 1.6 }}>
               {INVITE_ERRORS[inviteData.reason] || "This invite link is invalid."}
             </div>
           )}
 
           <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
             {settingsLoading ? (
-              <div style={{ color: "#9e9589", fontSize: "0.7rem", padding: "12px 0" }}>Loading…</div>
+              <div style={{ color: "#6a7260", fontSize: "0.7rem", padding: "12px 0" }}>Loading…</div>
             ) : (
               <>
                 {openRegistrationEnabled && (
                   <button onClick={() => reset("signup")}
-                    style={btnAccent({ width: "100%" })}
-                    onMouseOver={e => e.currentTarget.style.background = "#e8613e"}
-                    onMouseOut={e => e.currentTarget.style.background = "#c94b2d"}>
+                    style={btnPrimary({ width: "100%" })}
+                    onMouseOver={e => e.currentTarget.style.opacity = "0.88"}
+                    onMouseOut={e => e.currentTarget.style.opacity = "1"}>
                     Create Account →
                   </button>
                 )}
                 {applicationsEnabled && (
                   <button onClick={() => setPage("apply")}
                     style={btnPrimary({ width: "100%" })}
-                    onMouseOver={e => e.currentTarget.style.background = "#c94b2d"}
-                    onMouseOut={e => e.currentTarget.style.background = "#0d0d0d"}>
+                    onMouseOver={e => e.currentTarget.style.opacity = "0.88"}
+                    onMouseOut={e => e.currentTarget.style.opacity = "1"}>
                     Apply to Join →
                   </button>
                 )}
                 <button onClick={() => reset("login")}
-                  style={btnOutline({ width: "100%" })}
-                  onMouseOver={e => e.currentTarget.style.background = "#ede8dc"}
-                  onMouseOut={e => e.currentTarget.style.background = "transparent"}>
+                  style={{ ...btnPrimary({ width: "100%" }), background: "transparent", color: "#14120e", border: "1.5px solid rgba(20,18,14,0.25)" }}
+                  onMouseOver={e => { e.currentTarget.style.background = "#f7f5f0"; }}
+                  onMouseOut={e => { e.currentTarget.style.background = "transparent"; }}>
                   Sign In
                 </button>
                 {applicationsEnabled && (
                   <button onClick={() => reset("check-status")}
-                    style={{ background: "none", border: "none", cursor: "pointer", fontSize: "0.68rem", color: "#9e9589", textDecoration: "underline", padding: "4px 0" }}>
+                    style={{ background: "none", border: "none", cursor: "pointer", fontSize: "0.68rem", color: "#6a7260", textDecoration: "underline", padding: "4px 0" }}>
                     Check application status
                   </button>
                 )}
@@ -261,28 +261,28 @@ export default function AuthPage({ setUser, setPage, settings = {}, settingsLoad
     <div style={{ minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center", padding: "80px 20px" }}>
       <div style={{ width: 420, background: "white", padding: "44px 38px", boxShadow: "0 20px 60px rgba(0,0,0,0.12)", borderRadius: RADIUS }}>
         <button onClick={() => reset(null)}
-          style={{ background: "none", border: "none", cursor: "pointer", fontSize: "0.65rem", color: "#9e9589", letterSpacing: "0.1em", textTransform: "uppercase", marginBottom: 28, padding: 0 }}>
+          style={{ background: "none", border: "none", cursor: "pointer", fontSize: "0.65rem", color: "#6a7260", letterSpacing: "0.1em", textTransform: "uppercase", marginBottom: 28, padding: 0 }}>
           ← Back
         </button>
 
         {mode === "login" && (
           <>
-            <h2 style={{ fontFamily: "'Playfair Display',serif", fontSize: "1.9rem", fontWeight: 900, marginBottom: 6, letterSpacing: "-0.02em" }}>
-              Welcome <em style={{ color: "#c94b2d" }}>back</em>
+            <h2 style={{ fontFamily: "'Cormorant Garamond',serif", fontSize: "1.9rem", fontWeight: 600, marginBottom: 6, letterSpacing: "-0.02em" }}>
+              Welcome <em style={{ color: "#b8953a" }}>back</em>
             </h2>
-            <p style={{ fontSize: "0.7rem", color: "#9e9589", marginBottom: 32, lineHeight: 1.7 }}>Sign in to continue your swaps.</p>
+            <p style={{ fontSize: "0.7rem", color: "#6a7260", marginBottom: 32, lineHeight: 1.7 }}>Sign in to continue your swaps.</p>
             <Field label="Email *" name="email" value={form.email} onChange={handle} type="email" placeholder="you@example.com" />
             <Field label="Password *" name="password" value={form.password} onChange={handle} type="password" placeholder="••••••••" />
-            {error && <p style={{ fontSize: "0.68rem", color: "#c94b2d", marginBottom: 14 }}>{error}</p>}
+            {error && <p style={{ fontSize: "0.68rem", color: "#b8953a", marginBottom: 14 }}>{error}</p>}
             <button onClick={signIn}
               style={btnPrimary({ width: "100%", marginBottom: 16 })}
-              onMouseOver={e => e.currentTarget.style.background = "#c94b2d"}
-              onMouseOut={e => e.currentTarget.style.background = "#0d0d0d"}>
+              onMouseOver={e => e.currentTarget.style.background = "#b8953a"}
+              onMouseOut={e => e.currentTarget.style.background = "#14120e"}>
               Sign In →
             </button>
             {settings.openRegistrationEnabled && (
               <button onClick={() => reset("signup")}
-                style={{ background: "none", border: "none", cursor: "pointer", fontSize: "0.68rem", color: "#9e9589", textDecoration: "underline", width: "100%", textAlign: "center" }}>
+                style={{ background: "none", border: "none", cursor: "pointer", fontSize: "0.68rem", color: "#6a7260", textDecoration: "underline", width: "100%", textAlign: "center" }}>
                 New here? Create an account
               </button>
             )}
@@ -291,24 +291,24 @@ export default function AuthPage({ setUser, setPage, settings = {}, settingsLoad
 
         {mode === "signup" && (
           <>
-            <h2 style={{ fontFamily: "'Playfair Display',serif", fontSize: "1.9rem", fontWeight: 900, marginBottom: 6, letterSpacing: "-0.02em" }}>
-              Join the <em style={{ color: "#c94b2d" }}>Exchange</em>
+            <h2 style={{ fontFamily: "'Cormorant Garamond',serif", fontSize: "1.9rem", fontWeight: 600, marginBottom: 6, letterSpacing: "-0.02em" }}>
+              Join the <em style={{ color: "#b8953a" }}>Exchange</em>
             </h2>
-            <p style={{ fontSize: "0.7rem", color: "#9e9589", marginBottom: 32, lineHeight: 1.7 }}>Create your artist account and start trading.</p>
+            <p style={{ fontSize: "0.7rem", color: "#6a7260", marginBottom: 32, lineHeight: 1.7 }}>Create your artist account and start trading.</p>
             <Field label="Your Name *" name="name" value={form.name} onChange={handle} placeholder="e.g. Sofia Kwan" />
             <Field label="Email *" name="email" value={form.email} onChange={handle} type="email" placeholder="you@example.com" />
             <Field label="Password *" name="password" value={form.password} onChange={handle} type="password" placeholder="••••••••" />
             <Field label="Location" name="location" value={form.location} onChange={handle} placeholder="City, Country" />
             <FieldArea label="Short Bio" name="bio" value={form.bio} onChange={handle} placeholder="Tell other artists who you are..." />
-            {error && <p style={{ fontSize: "0.68rem", color: "#c94b2d", marginBottom: 14 }}>{error}</p>}
+            {error && <p style={{ fontSize: "0.68rem", color: "#b8953a", marginBottom: 14 }}>{error}</p>}
             <button onClick={signUp}
               style={btnPrimary({ width: "100%", marginBottom: 16 })}
-              onMouseOver={e => e.currentTarget.style.background = "#c94b2d"}
-              onMouseOut={e => e.currentTarget.style.background = "#0d0d0d"}>
+              onMouseOver={e => e.currentTarget.style.background = "#b8953a"}
+              onMouseOut={e => e.currentTarget.style.background = "#14120e"}>
               Create Account →
             </button>
             <button onClick={() => reset("login")}
-              style={{ background: "none", border: "none", cursor: "pointer", fontSize: "0.68rem", color: "#9e9589", textDecoration: "underline", width: "100%", textAlign: "center" }}>
+              style={{ background: "none", border: "none", cursor: "pointer", fontSize: "0.68rem", color: "#6a7260", textDecoration: "underline", width: "100%", textAlign: "center" }}>
               Already have an account? Sign in
             </button>
           </>
@@ -317,31 +317,31 @@ export default function AuthPage({ setUser, setPage, settings = {}, settingsLoad
         {mode === "invite-signup" && (
           <>
             <div style={{ fontSize: "0.65rem", textTransform: "uppercase", letterSpacing: "0.2em", color: "#5a7a5e", marginBottom: 12 }}>Invitation</div>
-            <h2 style={{ fontFamily: "'Playfair Display',serif", fontSize: "1.9rem", fontWeight: 900, marginBottom: 6, letterSpacing: "-0.02em" }}>
+            <h2 style={{ fontFamily: "'Cormorant Garamond',serif", fontSize: "1.9rem", fontWeight: 600, marginBottom: 6, letterSpacing: "-0.02em" }}>
               {inviteData?.inviteeName
-                ? <>Welcome, <em style={{ color: "#c94b2d" }}>{inviteData.inviteeName.split(" ")[0]}</em></>
-                : <>You've been <em style={{ color: "#c94b2d" }}>invited</em></>}
+                ? <>Welcome, <em style={{ color: "#b8953a" }}>{inviteData.inviteeName.split(" ")[0]}</em></>
+                : <>You've been <em style={{ color: "#b8953a" }}>invited</em></>}
             </h2>
-<p style={{ fontSize: "0.7rem", color: "#9e9589", marginBottom: inviteData?.personalMessage ? 16 : 32, lineHeight: 1.7 }}>
+<p style={{ fontSize: "0.7rem", color: "#6a7260", marginBottom: inviteData?.personalMessage ? 16 : 32, lineHeight: 1.7 }}>
               {inviteData?.personalMessage || "Complete your account to join the exchange."}
             </p>
             {inviteData?.personalMessage && (
-              <p style={{ fontSize: "0.7rem", color: "#9e9589", marginBottom: 32, lineHeight: 1.7 }}>
+              <p style={{ fontSize: "0.7rem", color: "#6a7260", marginBottom: 32, lineHeight: 1.7 }}>
                 Complete your account to join the exchange.
               </p>
             )}
             <div style={{ marginBottom: 18 }}>
-              <label style={{ display: "block", fontSize: "0.62rem", textTransform: "uppercase", letterSpacing: "0.12em", color: "#9e9589", marginBottom: 5 }}>Email</label>
+              <label style={{ display: "block", fontSize: "0.62rem", textTransform: "uppercase", letterSpacing: "0.12em", color: "#6a7260", marginBottom: 5 }}>Email</label>
               <input value={inviteData?.email || ""} readOnly
-                style={{ width: "100%", padding: "11px 13px", border: "1.5px solid rgba(0,0,0,0.13)", background: "#ede8dc", fontSize: "0.82rem", outline: "none", fontFamily: "'DM Mono',monospace", boxSizing: "border-box", color: "#9e9589" }} />
+                style={{ width: "100%", padding: "11px 13px", border: "1.5px solid rgba(0,0,0,0.13)", background: "#e8e4db", fontSize: "0.82rem", outline: "none", fontFamily: "'DM Sans',monospace", boxSizing: "border-box", color: "#6a7260" }} />
             </div>
             <Field label="Your Name *" name="name" value={form.name} onChange={handle} placeholder="e.g. Sofia Kwan" />
             <Field label="Password *" name="password" value={form.password} onChange={handle} type="password" placeholder="••••••••" />
-            {error && <p style={{ fontSize: "0.68rem", color: "#c94b2d", marginBottom: 14 }}>{error}</p>}
+            {error && <p style={{ fontSize: "0.68rem", color: "#b8953a", marginBottom: 14 }}>{error}</p>}
             <button onClick={inviteSignUp}
               style={btnAccent({ width: "100%" })}
               onMouseOver={e => e.currentTarget.style.background = "#e8613e"}
-              onMouseOut={e => e.currentTarget.style.background = "#c94b2d"}>
+              onMouseOut={e => e.currentTarget.style.background = "#b8953a"}>
               Join the Exchange →
             </button>
           </>
@@ -349,21 +349,21 @@ export default function AuthPage({ setUser, setPage, settings = {}, settingsLoad
 
         {mode === "check-status" && (
           <>
-            <h2 style={{ fontFamily: "'Playfair Display',serif", fontSize: "1.9rem", fontWeight: 900, marginBottom: 6, letterSpacing: "-0.02em" }}>
-              Application <em style={{ color: "#c94b2d" }}>Status</em>
+            <h2 style={{ fontFamily: "'Cormorant Garamond',serif", fontSize: "1.9rem", fontWeight: 600, marginBottom: 6, letterSpacing: "-0.02em" }}>
+              Application <em style={{ color: "#b8953a" }}>Status</em>
             </h2>
-            <p style={{ fontSize: "0.7rem", color: "#9e9589", marginBottom: 32, lineHeight: 1.7 }}>
+            <p style={{ fontSize: "0.7rem", color: "#6a7260", marginBottom: 32, lineHeight: 1.7 }}>
               Enter the email you applied with to check your status.
             </p>
             <Field label="Email *" name="email" value={form.email} onChange={handle} type="email" placeholder="you@example.com" />
-            {error && <p style={{ fontSize: "0.68rem", color: "#c94b2d", marginBottom: 14 }}>{error}</p>}
+            {error && <p style={{ fontSize: "0.68rem", color: "#b8953a", marginBottom: 14 }}>{error}</p>}
 
             {statusResult && !checking && (
               <div style={{
                 borderRadius: RADIUS, padding: "14px 16px", marginBottom: 20, fontSize: "0.75rem", lineHeight: 1.7,
                 ...(statusResult.status === "pending"   ? { background: "#c9952d12", color: "#c9952d", border: "1px solid #c9952d30" } :
-                   statusResult.status === "rejected"  ? { background: "#c94b2d12", color: "#c94b2d", border: "1px solid #c94b2d30" } :
-                   statusResult.status === "not_found" ? { background: "#f5f0e8",   color: "#9e9589", border: "1px solid rgba(0,0,0,0.08)" } :
+                   statusResult.status === "rejected"  ? { background: "#b8953a12", color: "#b8953a", border: "1px solid #b8953a30" } :
+                   statusResult.status === "not_found" ? { background: "#f7f5f0",   color: "#6a7260", border: "1px solid rgba(0,0,0,0.08)" } :
                                                          { background: "#5a7a5e12", color: "#5a7a5e", border: "1px solid #5a7a5e30" })
               }}>
                 {statusResult.status === "pending"   && "Your application is under review. We'll be in touch soon."}
@@ -380,8 +380,8 @@ export default function AuthPage({ setUser, setPage, settings = {}, settingsLoad
 
             <button onClick={checkStatus} disabled={checking}
               style={btnPrimary({ width: "100%", opacity: checking ? 0.6 : 1 })}
-              onMouseOver={e => { if (!checking) e.currentTarget.style.background = "#c94b2d"; }}
-              onMouseOut={e => { if (!checking) e.currentTarget.style.background = "#0d0d0d"; }}>
+              onMouseOver={e => { if (!checking) e.currentTarget.style.background = "#b8953a"; }}
+              onMouseOut={e => { if (!checking) e.currentTarget.style.background = "#14120e"; }}>
               {checking ? "Checking…" : "Check Status →"}
             </button>
           </>
@@ -390,24 +390,24 @@ export default function AuthPage({ setUser, setPage, settings = {}, settingsLoad
         {mode === "complete-signup" && appData && (
           <>
             <div style={{ fontSize: "0.65rem", textTransform: "uppercase", letterSpacing: "0.2em", color: "#5a7a5e", marginBottom: 12 }}>Application Accepted</div>
-            <h2 style={{ fontFamily: "'Playfair Display',serif", fontSize: "1.9rem", fontWeight: 900, marginBottom: 6, letterSpacing: "-0.02em" }}>
-              Welcome, <em style={{ color: "#c94b2d" }}>{appData.name.split(" ")[0]}</em>
+            <h2 style={{ fontFamily: "'Cormorant Garamond',serif", fontSize: "1.9rem", fontWeight: 600, marginBottom: 6, letterSpacing: "-0.02em" }}>
+              Welcome, <em style={{ color: "#b8953a" }}>{appData.name.split(" ")[0]}</em>
             </h2>
-            <p style={{ fontSize: "0.7rem", color: "#9e9589", marginBottom: 32, lineHeight: 1.7 }}>
+            <p style={{ fontSize: "0.7rem", color: "#6a7260", marginBottom: 32, lineHeight: 1.7 }}>
               Your application was accepted. Set a password to complete your account.
             </p>
             <div style={{ marginBottom: 18 }}>
-              <label style={{ display: "block", fontSize: "0.62rem", textTransform: "uppercase", letterSpacing: "0.12em", color: "#9e9589", marginBottom: 5 }}>Email</label>
+              <label style={{ display: "block", fontSize: "0.62rem", textTransform: "uppercase", letterSpacing: "0.12em", color: "#6a7260", marginBottom: 5 }}>Email</label>
               <input value={appData.email} readOnly
-                style={{ width: "100%", padding: "11px 13px", border: "1.5px solid rgba(0,0,0,0.13)", background: "#ede8dc", fontSize: "0.82rem", outline: "none", fontFamily: "'DM Mono',monospace", boxSizing: "border-box", color: "#9e9589" }} />
+                style={{ width: "100%", padding: "11px 13px", border: "1.5px solid rgba(0,0,0,0.13)", background: "#e8e4db", fontSize: "0.82rem", outline: "none", fontFamily: "'DM Sans',monospace", boxSizing: "border-box", color: "#6a7260" }} />
             </div>
             <Field label="Password *" name="password" value={form.password} onChange={handle} type="password" placeholder="Min. 6 characters" />
             <Field label="Confirm Password *" name="confirmPassword" value={form.confirmPassword} onChange={handle} type="password" placeholder="••••••••" />
-            {error && <p style={{ fontSize: "0.68rem", color: "#c94b2d", marginBottom: 14 }}>{error}</p>}
+            {error && <p style={{ fontSize: "0.68rem", color: "#b8953a", marginBottom: 14 }}>{error}</p>}
             <button onClick={completeSignUp}
               style={btnAccent({ width: "100%" })}
               onMouseOver={e => e.currentTarget.style.background = "#e8613e"}
-              onMouseOut={e => e.currentTarget.style.background = "#c94b2d"}>
+              onMouseOut={e => e.currentTarget.style.background = "#b8953a"}>
               Complete Signup →
             </button>
           </>

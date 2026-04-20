@@ -1,7 +1,15 @@
 // src/styles/theme.js
 // Central place for shared design tokens
 
-export const RADIUS = 5;
+export const NEGRO      = "#14120e";
+export const VERDE      = "#2e3d2a";
+export const ORO        = "#b8953a";
+export const CREMA      = "#f7f5f0";
+export const CREMA_DARK = "#e8e4db";
+export const MUTED      = "#6a7260";
+export const BORDER     = "#c8c4b4";
+
+export const RADIUS = 2;
 
 export const btn = (bg, color, extra = {}) => ({
   padding: "12px 20px",
@@ -13,16 +21,16 @@ export const btn = (bg, color, extra = {}) => ({
   background: bg,
   color,
   borderRadius: RADIUS,
-  fontFamily: "'DM Mono', monospace",
+  fontFamily: "'DM Sans', sans-serif",
   transition: "background 0.2s, opacity 0.2s",
   ...extra
 });
 
-export const btnPrimary = (extra = {}) => btn("#0d0d0d", "#f5f0e8", extra);
-export const btnAccent  = (extra = {}) => btn("#c94b2d", "white", extra);
-export const btnOutline = (extra = {}) => btn("transparent", "#0d0d0d", {
-  border: `1.5px solid rgba(0,0,0,0.15)`, ...extra
+export const btnPrimary = (extra = {}) => btn(NEGRO, CREMA, extra);
+export const btnAccent  = (extra = {}) => btn(VERDE, CREMA, extra);
+export const btnOutline = (extra = {}) => btn("transparent", CREMA, {
+  border: `1.5px solid ${CREMA}`, ...extra
 });
-export const btnDanger  = (extra = {}) => btn("transparent", "#c94b2d", {
-  border: `1.5px solid #c94b2d`, ...extra
+export const btnDanger  = (extra = {}) => btn("transparent", ORO, {
+  border: `1.5px solid ${ORO}`, ...extra
 });

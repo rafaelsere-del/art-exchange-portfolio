@@ -10,19 +10,19 @@ import ArtSVG from "../components/ArtSVG";
 const btn = (bg, color, extra = {}) => ({
   padding: "9px 16px", border: "none", cursor: "pointer",
   fontSize: "0.68rem", letterSpacing: "0.08em", textTransform: "uppercase",
-  background: bg, color, borderRadius: RADIUS, fontFamily: "'DM Mono',monospace",
+  background: bg, color, borderRadius: RADIUS, fontFamily: "'DM Sans',monospace",
   transition: "opacity 0.2s", ...extra
 });
 
 const TAG = {
-  admin:  { background: "#c94b2d22", color: "#c94b2d" },
+  admin:  { background: "#b8953a22", color: "#b8953a" },
   artist: { background: "#5a7a5e22", color: "#5a7a5e" },
 };
 
 const APP_STATUS = {
   pending:  { background: "#c9952d22", color: "#c9952d" },
   accepted: { background: "#5a7a5e22", color: "#5a7a5e" },
-  rejected: { background: "#c94b2d22", color: "#c94b2d" },
+  rejected: { background: "#b8953a22", color: "#b8953a" },
 };
 
 const Badge = ({ status }) => (
@@ -40,6 +40,11 @@ export default function AdminPage({ user, setPage, settings = {}, setSettings })
   const [importResults, setImportResults] = useState(null);
   const [importing, setImporting] = useState(false);
   const fileRef = useRef();
+
+  // Homepage featured state
+  const [homepageConfig, setHomepageConfig] = useState({ featuredArtistUids: [], featuredArtworks: [], heroArtworks: [] });
+  const [homepageSaved, setHomepageSaved] = useState(false);
+  const [homepageLoading, setHomepageLoading] = useState(false);
 
   // New acquisition state
   const [applications, setApplications] = useState([]);
@@ -73,7 +78,7 @@ if (artworks.length === 0 && (userData.artworkBase64 || userData.artworkImageUrl
     title: userData.artworkFile?.replace(/_/g, " ").replace(/\.jpg$/i, "") || "Artwork",
     imageUrl: userData.artworkImageUrl || userData.artworkBase64 || null,
     medium: "Unknown", year: "", size: "",
-    color1: "#c9952d", color2: "#c94b2d", shape: "lines",
+    color1: "#c9952d", color2: "#b8953a", shape: "lines",
     isLegacy: true
   }];
 }
@@ -90,6 +95,19 @@ return { uid: d.id, ...userData, artworks, hasArtwork: artworks.length > 0 };
     };
     load();
   }, []);
+
+  // ── Lazy-load homepage config ─────────────────────────────────────────────
+  useEffect(() => {
+    if (tab === "homepage" && !loadedTabs.current.has("homepage")) {
+      loadedTabs.current.add("homepage");
+      setHomepageLoading(true);
+      import("firebase/firestore").then(({ getDoc, doc: firestoreDoc }) => {
+        getDoc(firestoreDoc(db, "settings", "homepage"))
+          .then(snap => { if (snap.exists()) setHomepageConfig(snap.data()); })
+          .finally(() => setHomepageLoading(false));
+      });
+    }
+  }, [tab]);
 
   // ── Lazy-load applications / invitations ──────────────────────────────────
   useEffect(() => {
@@ -183,6 +201,99 @@ return { uid: d.id, ...userData, artworks, hasArtwork: artworks.length > 0 };
   const revokeInvite = async (token) => {
     await updateDoc(doc(db, "invitations", token), { status: "expired" });
     setInvitations(prev => prev.map(i => i.id === token ? { ...i, status: "expired" } : i));
+  };
+
+  // ── Homepage config helpers ────────────────────────────────────────────────
+  const toggleFeaturedArtist = (uid) => {
+    setHomepageConfig(cfg => {
+      const already = cfg.featuredArtistUids.includes(uid);
+      if (already) return { ...cfg, featuredArtistUids: cfg.featuredArtistUids.filter(id => id !== uid) };
+      if (cfg.featuredArtistUids.length >= 5) return cfg;
+      return { ...cfg, featuredArtistUids: [...cfg.featuredArtistUids, uid] };
+    });
+  };
+
+  const toggleHeroArtwork = (uid, artworkId) => {
+    setHomepageConfig(cfg => {
+      const already = (cfg.heroArtworks || []).some(a => a.uid === uid && a.artworkId === artworkId);
+      if (already) return { ...cfg, heroArtworks: cfg.heroArtworks.filter(a => !(a.uid === uid && a.artworkId === artworkId)) };
+      if ((cfg.heroArtworks || []).length >= 4) return cfg;
+      return { ...cfg, heroArtworks: [...(cfg.heroArtworks || []), { uid, artworkId }] };
+    });
+  };
+
+  const toggleFeaturedArtwork = (uid, artworkId) => {
+    setHomepageConfig(cfg => {
+      const already = cfg.featuredArtworks.some(a => a.uid === uid && a.artworkId === artworkId);
+      if (already) return { ...cfg, featuredArtworks: cfg.featuredArtworks.filter(a => !(a.uid === uid && a.artworkId === artworkId)) };
+      if (cfg.featuredArtworks.length >= 4) return cfg;
+      return { ...cfg, featuredArtworks: [...cfg.featuredArtworks, { uid, artworkId }] };
+    });
+  };
+
+  const saveHomepage = async () => {
+    // Only store Storage URLs — never base64 (too large for Firestore)
+    const safeUrl = (url) => (url && url.startsWith("https://")) ? url : null;
+
+    // Build denormalized snapshots so homepage can read without auth
+    const artistSnapshots = homepageConfig.featuredArtistUids.map(uid => {
+      const u = users.find(x => x.uid === uid);
+      if (!u) return null;
+      const firstArt = u.artworks.find(a => safeUrl(a.imageUrl));
+      return {
+        uid,
+        name: u.name,
+        location: u.location,
+        artworkCount: u.artworks.length,
+        profileImageUrl: safeUrl(u.profileImageUrl) || safeUrl(firstArt?.imageUrl) || null,
+      };
+    }).filter(Boolean);
+
+    const artworkSnapshots = homepageConfig.featuredArtworks.map(({ uid, artworkId }) => {
+      const u = users.find(x => x.uid === uid);
+      const art = u?.artworks.find(a => a.id === artworkId);
+      if (!u || !art) return null;
+      return {
+        id: artworkId, uid,
+        title: art.title || "Untitled",
+        artist: u.name,
+        initials: u.name.split(" ").map(w => w[0]).join("").slice(0, 2).toUpperCase(),
+        avatarBg: "#2e3d2a",
+        imageUrl: safeUrl(art.imageUrl),
+        color1: art.color1 || "#c8b870",
+        color2: art.color2 || "#d4a030",
+        shape: art.shape || "lines",
+        medium: [art.medium, art.size].filter(Boolean).join(" · ") || "Mixed media",
+        seeking: "open exchange",
+        status: "open",
+      };
+    }).filter(Boolean);
+
+    const heroSnapshots = (homepageConfig.heroArtworks || []).map(({ uid, artworkId }) => {
+      const u = users.find(x => x.uid === uid);
+      const art = u?.artworks.find(a => a.id === artworkId);
+      if (!u || !art) return null;
+      return {
+        id: artworkId, uid,
+        title: art.title || "Untitled",
+        artist: u.name,
+        imageUrl: safeUrl(art.imageUrl),
+        color1: art.color1 || "#c8b870",
+        color2: art.color2 || "#d4a030",
+        shape: art.shape || "lines",
+      };
+    }).filter(Boolean);
+
+    await setDoc(doc(db, "settings", "homepage"), {
+      ...homepageConfig,
+      artistSnapshots,
+      artworkSnapshots,
+      heroSnapshots,
+      updatedAt: new Date(),
+      updatedBy: user.uid
+    });
+    setHomepageSaved(true);
+    setTimeout(() => setHomepageSaved(false), 3000);
   };
 
   // ── Save settings ──────────────────────────────────────────────────────────
@@ -295,45 +406,45 @@ return { uid: d.id, ...userData, artworks, hasArtwork: artworks.length > 0 };
 
   // ─── Render ────────────────────────────────────────────────────────────────
   return (
-    <div style={{ paddingTop: 80, minHeight: "100vh", background: "#f5f0e8" }}>
+    <div style={{ paddingTop: 80, minHeight: "100vh", background: "#f7f5f0" }}>
       <style>{`
         .admin-table { width: 100%; border-collapse: collapse; }
-        .admin-table th { font-size: 0.6rem; text-transform: uppercase; letter-spacing: 0.12em; color: #9e9589; padding: 10px 14px; text-align: left; border-bottom: 1px solid rgba(0,0,0,0.08); }
+        .admin-table th { font-size: 0.6rem; text-transform: uppercase; letter-spacing: 0.12em; color: #6a7260; padding: 10px 14px; text-align: left; border-bottom: 1px solid rgba(0,0,0,0.08); }
         .admin-table td { font-size: 0.78rem; padding: 12px 14px; border-bottom: 1px solid rgba(0,0,0,0.05); vertical-align: middle; }
         .admin-table tr:hover td { background: rgba(0,0,0,0.02); }
       `}</style>
 
       {/* Header */}
-      <div style={{ background: "#0d0d0d", color: "#f5f0e8", padding: "20px 40px", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+      <div style={{ background: "#14120e", color: "#f7f5f0", padding: "20px 40px", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
         <div>
-          <div style={{ fontFamily: "'Playfair Display',serif", fontSize: "1.4rem", fontWeight: 900 }}>
-            ART<span style={{ color: "#c94b2d", fontStyle: "italic" }}>x</span>ART
-            <span style={{ fontSize: "0.65rem", letterSpacing: "0.2em", textTransform: "uppercase", color: "#9e9589", marginLeft: 12 }}>Admin</span>
+          <div style={{ fontFamily: "'Cormorant Garamond',serif", fontSize: "1.4rem", fontWeight: 600 }}>
+            ART<span style={{ color: "#b8953a", fontStyle: "italic" }}>x</span>ART
+            <span style={{ fontSize: "0.65rem", letterSpacing: "0.2em", textTransform: "uppercase", color: "#6a7260", marginLeft: 12 }}>Admin</span>
           </div>
-          <div style={{ fontSize: "0.62rem", color: "#9e9589", marginTop: 2 }}>Logged in as {user.name}</div>
+          <div style={{ fontSize: "0.62rem", color: "#6a7260", marginTop: 2 }}>Logged in as {user.name}</div>
         </div>
-        <button onClick={() => setPage("swipe")} style={btn("#f5f0e820", "#f5f0e8")}>← Back to App</button>
+        <button onClick={() => setPage("swipe")} style={btn("#f7f5f020", "#f7f5f0")}>← Back to App</button>
       </div>
 
       {/* Stats */}
       <div style={{ display: "grid", gridTemplateColumns: "repeat(5,1fr)", gap: 1, background: "rgba(0,0,0,0.07)" }}>
         {stats.map(s => (
-          <div key={s.label} style={{ background: "#f5f0e8", padding: "24px 32px" }}>
-            <div style={{ fontFamily: "'Playfair Display',serif", fontSize: "2.2rem", fontWeight: 900 }}>{s.value}</div>
-            <div style={{ fontSize: "0.6rem", textTransform: "uppercase", letterSpacing: "0.12em", color: "#9e9589", marginTop: 4 }}>{s.label}</div>
+          <div key={s.label} style={{ background: "#f7f5f0", padding: "24px 32px" }}>
+            <div style={{ fontFamily: "'Cormorant Garamond',serif", fontSize: "2.2rem", fontWeight: 600 }}>{s.value}</div>
+            <div style={{ fontSize: "0.6rem", textTransform: "uppercase", letterSpacing: "0.12em", color: "#6a7260", marginTop: 4 }}>{s.label}</div>
           </div>
         ))}
       </div>
 
       {/* Tabs */}
       <div style={{ display: "flex", gap: 0, borderBottom: "1px solid rgba(0,0,0,0.08)", padding: "0 40px", background: "white", overflowX: "auto" }}>
-        {[["users","Users"], ["artworks","Artworks"], ["import","Import Excel"], ["applications","Applications"], ["invitations","Invitations"], ["settings","Settings"]].map(([id, label]) => (
+        {[["users","Users"], ["artworks","Artworks"], ["homepage","Homepage"], ["import","Import Excel"], ["applications","Applications"], ["invitations","Invitations"], ["settings","Settings"]].map(([id, label]) => (
           <button key={id} onClick={() => setTab(id)} style={{
             background: "none", border: "none", cursor: "pointer",
             padding: "16px 20px", fontSize: "0.68rem", letterSpacing: "0.1em",
-            textTransform: "uppercase", fontFamily: "'DM Mono',monospace",
-            color: tab === id ? "#c94b2d" : "#9e9589",
-            borderBottom: tab === id ? "2px solid #c94b2d" : "2px solid transparent",
+            textTransform: "uppercase", fontFamily: "'DM Sans',monospace",
+            color: tab === id ? "#b8953a" : "#6a7260",
+            borderBottom: tab === id ? "2px solid #b8953a" : "2px solid transparent",
             marginBottom: -1
           }}>{label}</button>
         ))}
@@ -345,7 +456,7 @@ return { uid: d.id, ...userData, artworks, hasArtwork: artworks.length > 0 };
         {tab === "users" && (
           <div style={{ background: "white", borderRadius: RADIUS, overflow: "hidden", boxShadow: "0 2px 12px rgba(0,0,0,0.06)" }}>
             {loading ? (
-              <div style={{ padding: 40, textAlign: "center", color: "#9e9589" }}>Loading...</div>
+              <div style={{ padding: 40, textAlign: "center", color: "#6a7260" }}>Loading...</div>
             ) : (
               <table className="admin-table">
                 <thead>
@@ -363,10 +474,10 @@ return { uid: d.id, ...userData, artworks, hasArtwork: artworks.length > 0 };
                     <tr key={u.uid}>
                       <td>
                         <div style={{ fontWeight: 600 }}>{u.name}</div>
-                        <div style={{ fontSize: "0.62rem", color: "#9e9589" }}>{u.bio?.slice(0, 40)}{u.bio?.length > 40 ? "…" : ""}</div>
+                        <div style={{ fontSize: "0.62rem", color: "#6a7260" }}>{u.bio?.slice(0, 40)}{u.bio?.length > 40 ? "…" : ""}</div>
                       </td>
-                      <td style={{ color: "#9e9589" }}>{u.email}</td>
-                      <td style={{ color: "#9e9589" }}>{u.location}</td>
+                      <td style={{ color: "#6a7260" }}>{u.email}</td>
+                      <td style={{ color: "#6a7260" }}>{u.location}</td>
                       <td>
                         <span style={{ ...TAG[u.role] || TAG.artist, padding: "3px 8px", borderRadius: RADIUS, fontSize: "0.6rem", textTransform: "uppercase", letterSpacing: "0.08em" }}>
                           {u.role || "artist"}
@@ -375,17 +486,17 @@ return { uid: d.id, ...userData, artworks, hasArtwork: artworks.length > 0 };
                       <td>
                         {u.hasArtwork ? (
                           <button onClick={() => { setSelectedUser(u); setTab("artworks"); }}
-                            style={{ ...btn("#f5f0e8", "#0d0d0d"), fontSize: "0.62rem" }}>
+                            style={{ ...btn("#f7f5f0", "#14120e"), fontSize: "0.62rem" }}>
                             {u.artworks.length} artwork{u.artworks.length !== 1 ? "s" : ""}
                           </button>
                         ) : (
-                          <span style={{ fontSize: "0.62rem", color: "#9e9589" }}>No artworks</span>
+                          <span style={{ fontSize: "0.62rem", color: "#6a7260" }}>No artworks</span>
                         )}
                       </td>
                       <td>
                         {u.uid !== user.uid && (
                           <button onClick={() => deleteUser(u.uid, u.name)}
-                            style={btn("#c94b2d15", "#c94b2d")}>
+                            style={btn("#b8953a15", "#b8953a")}>
                             Delete
                           </button>
                         )}
@@ -406,16 +517,16 @@ return { uid: d.id, ...userData, artworks, hasArtwork: artworks.length > 0 };
                 <div style={{ fontSize: "0.78rem" }}>
                   Showing artworks by <strong>{selectedUser.name}</strong>
                 </div>
-                <button onClick={() => setSelectedUser(null)} style={btn("#f5f0e8", "#0d0d0d")}>
+                <button onClick={() => setSelectedUser(null)} style={btn("#f7f5f0", "#14120e")}>
                   Show All
                 </button>
               </div>
             )}
             <div style={{ background: "white", borderRadius: RADIUS, overflow: "hidden", boxShadow: "0 2px 12px rgba(0,0,0,0.06)" }}>
               {loading ? (
-                <div style={{ padding: 40, textAlign: "center", color: "#9e9589" }}>Loading...</div>
+                <div style={{ padding: 40, textAlign: "center", color: "#6a7260" }}>Loading...</div>
               ) : artworkRows.length === 0 ? (
-                <div style={{ padding: 40, textAlign: "center", color: "#9e9589" }}>No artworks found.</div>
+                <div style={{ padding: 40, textAlign: "center", color: "#6a7260" }}>No artworks found.</div>
               ) : (
                 <table className="admin-table">
                   <thead>
@@ -440,19 +551,19 @@ return { uid: d.id, ...userData, artworks, hasArtwork: artworks.length > 0 };
                             </div>
                             <div>
                               <div style={{ fontWeight: 600 }}>{art.title || "Untitled"}</div>
-                              <div style={{ fontSize: "0.62rem", color: "#9e9589" }}>{art.medium} · {art.year}</div>
+                              <div style={{ fontSize: "0.62rem", color: "#6a7260" }}>{art.medium} · {art.year}</div>
                             </div>
                           </div>
                         </td>
-                        <td style={{ color: "#9e9589" }}>{art.userName}</td>
-                        <td style={{ color: "#9e9589" }}>{art.userLocation}</td>
-                        <td style={{ color: "#9e9589", fontSize: "0.62rem" }}>
+                        <td style={{ color: "#6a7260" }}>{art.userName}</td>
+                        <td style={{ color: "#6a7260" }}>{art.userLocation}</td>
+                        <td style={{ color: "#6a7260", fontSize: "0.62rem" }}>
                           {art.size || "—"}
-                          {art.estimatedValue && <span style={{ color: "#c94b2d", marginLeft: 6 }}>£{art.estimatedValue}</span>}
+                          {art.estimatedValue && <span style={{ color: "#b8953a", marginLeft: 6 }}>£{art.estimatedValue}</span>}
                         </td>
                         <td>
                           <button onClick={() => deleteArtwork(art.userUid, art.id, art.title)}
-                            style={btn("#c94b2d15", "#c94b2d")}>
+                            style={btn("#b8953a15", "#b8953a")}>
                             Delete
                           </button>
                         </td>
@@ -468,15 +579,15 @@ return { uid: d.id, ...userData, artworks, hasArtwork: artworks.length > 0 };
         {/* ── IMPORT TAB ── */}
         {tab === "import" && (
           <div style={{ maxWidth: 640 }}>
-            <h2 style={{ fontFamily: "'Playfair Display',serif", fontSize: "1.6rem", fontWeight: 900, marginBottom: 8 }}>
+            <h2 style={{ fontFamily: "'Cormorant Garamond',serif", fontSize: "1.6rem", fontWeight: 600, marginBottom: 8 }}>
               Import Users from Excel
             </h2>
-            <p style={{ fontSize: "0.75rem", color: "#9e9589", lineHeight: 1.8, marginBottom: 32 }}>
+            <p style={{ fontSize: "0.75rem", color: "#6a7260", lineHeight: 1.8, marginBottom: 32 }}>
               Upload a .xlsx file with columns: <strong>name</strong>, <strong>email</strong>, <strong>password</strong>, <strong>location</strong>, <strong>bio</strong>.<br />
               Each user will be created in Firebase Auth and Firestore.
             </p>
 
-            <div style={{ background: "#ede8dc", padding: "16px 20px", borderRadius: RADIUS, marginBottom: 28, fontSize: "0.72rem", lineHeight: 1.7 }}>
+            <div style={{ background: "#e8e4db", padding: "16px 20px", borderRadius: RADIUS, marginBottom: 28, fontSize: "0.72rem", lineHeight: 1.7 }}>
               📋 <strong>Required columns:</strong> name · email · password · location (optional) · bio (optional)
             </div>
 
@@ -486,14 +597,14 @@ return { uid: d.id, ...userData, artworks, hasArtwork: artworks.length > 0 };
               {importing ? (
                 <>
                   <div style={{ fontSize: "1.5rem", marginBottom: 10 }}>⏳</div>
-                  <div style={{ fontSize: "0.73rem", color: "#9e9589" }}>Creating users...</div>
+                  <div style={{ fontSize: "0.73rem", color: "#6a7260" }}>Creating users...</div>
                 </>
               ) : (
                 <>
                   <div style={{ fontSize: "1.8rem", marginBottom: 10 }}>📊</div>
-                  <div style={{ fontSize: "0.73rem", color: "#9e9589", textAlign: "center", lineHeight: 1.7 }}>
+                  <div style={{ fontSize: "0.73rem", color: "#6a7260", textAlign: "center", lineHeight: 1.7 }}>
                     Drop your .xlsx file here<br />
-                    <span style={{ color: "#c94b2d", textDecoration: "underline" }}>or click to browse</span>
+                    <span style={{ color: "#b8953a", textDecoration: "underline" }}>or click to browse</span>
                   </div>
                 </>
               )}
@@ -505,24 +616,24 @@ return { uid: d.id, ...userData, artworks, hasArtwork: artworks.length > 0 };
               <div style={{ marginTop: 28 }}>
                 {importResults.created.length > 0 && (
                   <div style={{ background: "#5a7a5e15", border: "1px solid #5a7a5e30", borderRadius: RADIUS, padding: "16px 20px", marginBottom: 16 }}>
-                    <div style={{ fontSize: "0.68rem", textTransform: "uppercase", letterSpacing: "0.1em", color: "#5a7a5e", marginBottom: 10, fontWeight: 700 }}>
+                    <div style={{ fontSize: "0.68rem", textTransform: "uppercase", letterSpacing: "0.1em", color: "#5a7a5e", marginBottom: 10, fontWeight: 500 }}>
                       ✓ {importResults.created.length} user{importResults.created.length !== 1 ? "s" : ""} created
                     </div>
                     {importResults.created.map((u, i) => (
-                      <div key={i} style={{ fontSize: "0.72rem", color: "#0d0d0d", marginBottom: 4 }}>
+                      <div key={i} style={{ fontSize: "0.72rem", color: "#14120e", marginBottom: 4 }}>
                         {u.name} — {u.email}
                       </div>
                     ))}
                   </div>
                 )}
                 {importResults.failed.length > 0 && (
-                  <div style={{ background: "#c94b2d15", border: "1px solid #c94b2d30", borderRadius: RADIUS, padding: "16px 20px" }}>
-                    <div style={{ fontSize: "0.68rem", textTransform: "uppercase", letterSpacing: "0.1em", color: "#c94b2d", marginBottom: 10, fontWeight: 700 }}>
+                  <div style={{ background: "#b8953a15", border: "1px solid #b8953a30", borderRadius: RADIUS, padding: "16px 20px" }}>
+                    <div style={{ fontSize: "0.68rem", textTransform: "uppercase", letterSpacing: "0.1em", color: "#b8953a", marginBottom: 10, fontWeight: 500 }}>
                       ✕ {importResults.failed.length} failed
                     </div>
                     {importResults.failed.map((u, i) => (
-                      <div key={i} style={{ fontSize: "0.72rem", color: "#0d0d0d", marginBottom: 4 }}>
-                        {u.email} — <span style={{ color: "#c94b2d" }}>{u.reason}</span>
+                      <div key={i} style={{ fontSize: "0.72rem", color: "#14120e", marginBottom: 4 }}>
+                        {u.email} — <span style={{ color: "#b8953a" }}>{u.reason}</span>
                       </div>
                     ))}
                   </div>
@@ -535,7 +646,7 @@ return { uid: d.id, ...userData, artworks, hasArtwork: artworks.length > 0 };
         {tab === "applications" && (
           <div style={{ background: "white", borderRadius: RADIUS, overflow: "hidden", boxShadow: "0 2px 12px rgba(0,0,0,0.06)" }}>
             {applications.length === 0 ? (
-              <div style={{ padding: 40, textAlign: "center", color: "#9e9589" }}>No applications yet.</div>
+              <div style={{ padding: 40, textAlign: "center", color: "#6a7260" }}>No applications yet.</div>
             ) : (
               <table className="admin-table">
                 <thead>
@@ -554,24 +665,24 @@ return { uid: d.id, ...userData, artworks, hasArtwork: artworks.length > 0 };
                       <tr>
                         <td>
                           <div style={{ fontWeight: 600 }}>{app.name}</div>
-                          <div style={{ fontSize: "0.62rem", color: "#9e9589" }}>{app.bio?.slice(0, 40)}{app.bio?.length > 40 ? "…" : ""}</div>
+                          <div style={{ fontSize: "0.62rem", color: "#6a7260" }}>{app.bio?.slice(0, 40)}{app.bio?.length > 40 ? "…" : ""}</div>
                         </td>
-                        <td style={{ color: "#9e9589" }}>{app.email}</td>
-                        <td style={{ color: "#9e9589", fontSize: "0.7rem" }}>
+                        <td style={{ color: "#6a7260" }}>{app.email}</td>
+                        <td style={{ color: "#6a7260", fontSize: "0.7rem" }}>
                           {app.createdAt?.toDate?.()?.toLocaleDateString() || "—"}
                         </td>
                         <td><Badge status={app.status} /></td>
                         <td>
                           {app.artworkImageUrl
-                            ? <button onClick={() => window.open(app.artworkImageUrl, "_blank")} style={btn("#f5f0e8","#0d0d0d")}>View</button>
-                            : <span style={{ fontSize: "0.62rem", color: "#9e9589" }}>None</span>
+                            ? <button onClick={() => window.open(app.artworkImageUrl, "_blank")} style={btn("#f7f5f0","#14120e")}>View</button>
+                            : <span style={{ fontSize: "0.62rem", color: "#6a7260" }}>None</span>
                           }
                         </td>
                         <td>
                           {app.status === "pending" && (
                             <div style={{ display: "flex", gap: 6 }}>
                               <button onClick={() => acceptApp(app)} style={btn("#5a7a5e22","#5a7a5e")}>Accept</button>
-                              <button onClick={() => setRejectingId(rejectingId === app.id ? null : app.id)} style={btn("#c94b2d15","#c94b2d")}>Reject</button>
+                              <button onClick={() => setRejectingId(rejectingId === app.id ? null : app.id)} style={btn("#b8953a15","#b8953a")}>Reject</button>
                             </div>
                           )}
                         </td>
@@ -584,10 +695,10 @@ return { uid: d.id, ...userData, artworks, hasArtwork: artworks.length > 0 };
                                 value={rejectReason}
                                 onChange={e => setRejectReason(e.target.value)}
                                 placeholder="Reason (optional)"
-                                style={{ flex: 1, padding: "8px 12px", border: "1.5px solid rgba(0,0,0,0.13)", background: "#f5f0e8", fontSize: "0.78rem", fontFamily: "'DM Mono',monospace", outline: "none", borderRadius: RADIUS }}
+                                style={{ flex: 1, padding: "8px 12px", border: "1.5px solid rgba(0,0,0,0.13)", background: "#f7f5f0", fontSize: "0.78rem", fontFamily: "'DM Sans',monospace", outline: "none", borderRadius: RADIUS }}
                               />
-                              <button onClick={() => rejectApp(app)} style={btn("#c94b2d","white")}>Confirm Reject</button>
-                              <button onClick={() => { setRejectingId(null); setRejectReason(""); }} style={btn("#f5f0e8","#9e9589")}>Cancel</button>
+                              <button onClick={() => rejectApp(app)} style={btn("#b8953a","white")}>Confirm Reject</button>
+                              <button onClick={() => { setRejectingId(null); setRejectReason(""); }} style={btn("#f7f5f0","#6a7260")}>Cancel</button>
                             </div>
                           </td>
                         </tr>
@@ -605,31 +716,31 @@ return { uid: d.id, ...userData, artworks, hasArtwork: artworks.length > 0 };
           <div>
             {/* Generate invite */}
             <div style={{ background: "white", borderRadius: RADIUS, padding: "24px 28px", boxShadow: "0 2px 12px rgba(0,0,0,0.06)", marginBottom: 24 }}>
-              <div style={{ fontSize: "0.65rem", textTransform: "uppercase", letterSpacing: "0.12em", color: "#9e9589", marginBottom: 14 }}>Send an Invitation</div>
+              <div style={{ fontSize: "0.65rem", textTransform: "uppercase", letterSpacing: "0.12em", color: "#6a7260", marginBottom: 14 }}>Send an Invitation</div>
               <div style={{ display: "flex", gap: 10, alignItems: "flex-start" }}>
                 <div style={{ flex: 1, display: "flex", flexDirection: "column", gap: 8 }}>
                   <input
                     value={inviteEmail}
                     onChange={e => { setInviteEmail(e.target.value); setInviteError(""); }}
                     placeholder="artist@example.com"
-                    style={{ width: "100%", padding: "10px 13px", border: "1.5px solid rgba(0,0,0,0.13)", background: "#f5f0e8", fontSize: "0.82rem", fontFamily: "'DM Mono',monospace", outline: "none", borderRadius: RADIUS, boxSizing: "border-box" }}
+                    style={{ width: "100%", padding: "10px 13px", border: "1.5px solid rgba(0,0,0,0.13)", background: "#f7f5f0", fontSize: "0.82rem", fontFamily: "'DM Sans',monospace", outline: "none", borderRadius: RADIUS, boxSizing: "border-box" }}
                   />
                   <input
                     value={inviteeName}
                     onChange={e => setInviteeName(e.target.value)}
                     placeholder="Invitee's name (optional)"
-                    style={{ width: "100%", padding: "10px 13px", border: "1.5px solid rgba(0,0,0,0.13)", background: "#f5f0e8", fontSize: "0.82rem", fontFamily: "'DM Mono',monospace", outline: "none", borderRadius: RADIUS, boxSizing: "border-box" }}
+                    style={{ width: "100%", padding: "10px 13px", border: "1.5px solid rgba(0,0,0,0.13)", background: "#f7f5f0", fontSize: "0.82rem", fontFamily: "'DM Sans',monospace", outline: "none", borderRadius: RADIUS, boxSizing: "border-box" }}
                   />
                   <textarea
                     value={personalMessage}
                     onChange={e => setPersonalMessage(e.target.value)}
                     placeholder="Personal message shown on their signup page (optional)"
                     rows={3}
-                    style={{ width: "100%", padding: "10px 13px", border: "1.5px solid rgba(0,0,0,0.13)", background: "#f5f0e8", fontSize: "0.78rem", fontFamily: "'DM Mono',monospace", outline: "none", borderRadius: RADIUS, boxSizing: "border-box", resize: "vertical", lineHeight: 1.6 }}
+                    style={{ width: "100%", padding: "10px 13px", border: "1.5px solid rgba(0,0,0,0.13)", background: "#f7f5f0", fontSize: "0.78rem", fontFamily: "'DM Sans',monospace", outline: "none", borderRadius: RADIUS, boxSizing: "border-box", resize: "vertical", lineHeight: 1.6 }}
                   />
-                  {inviteError && <div style={{ fontSize: "0.65rem", color: "#c94b2d" }}>{inviteError}</div>}
+                  {inviteError && <div style={{ fontSize: "0.65rem", color: "#b8953a" }}>{inviteError}</div>}
                 </div>
-                <button onClick={generateInvite} style={btn("#0d0d0d","#f5f0e8", { padding: "10px 20px", alignSelf: "flex-start" })}>
+                <button onClick={generateInvite} style={btn("#14120e","#f7f5f0", { padding: "10px 20px", alignSelf: "flex-start" })}>
                   Generate Invite
                 </button>
               </div>
@@ -638,7 +749,7 @@ return { uid: d.id, ...userData, artworks, hasArtwork: artworks.length > 0 };
             {/* Invitations table */}
             <div style={{ background: "white", borderRadius: RADIUS, overflow: "hidden", boxShadow: "0 2px 12px rgba(0,0,0,0.06)" }}>
               {invitations.length === 0 ? (
-                <div style={{ padding: 40, textAlign: "center", color: "#9e9589" }}>No invitations sent yet.</div>
+                <div style={{ padding: 40, textAlign: "center", color: "#6a7260" }}>No invitations sent yet.</div>
               ) : (
                 <table className="admin-table">
                   <thead>
@@ -662,11 +773,11 @@ return { uid: d.id, ...userData, artworks, hasArtwork: artworks.length > 0 };
                               const url = `${window.location.protocol}//${window.location.host}/?invite=${inv.token}`;
                               return (
                                 <input readOnly value={url} onClick={e => e.target.select()}
-                                  style={{ width: "100%", minWidth: 260, padding: "4px 8px", fontSize: "0.65rem", border: "1px solid rgba(0,0,0,0.12)", background: "#f5f0e8", fontFamily: "'DM Mono',monospace", borderRadius: RADIUS, cursor: "text" }} />
+                                  style={{ width: "100%", minWidth: 260, padding: "4px 8px", fontSize: "0.65rem", border: "1px solid rgba(0,0,0,0.12)", background: "#f7f5f0", fontFamily: "'DM Sans',monospace", borderRadius: RADIUS, cursor: "text" }} />
                               );
                             })()}
                           </td>
-                          <td style={{ color: "#9e9589", fontSize: "0.7rem" }}>
+                          <td style={{ color: "#6a7260", fontSize: "0.7rem" }}>
                             {inv.invitedAt?.toDate?.()?.toLocaleDateString() || "—"}
                           </td>
                           <td><Badge status={expired && inv.status === "pending" ? "rejected" : inv.status} /></td>
@@ -674,10 +785,10 @@ return { uid: d.id, ...userData, artworks, hasArtwork: artworks.length > 0 };
                             <div style={{ display: "flex", gap: 6 }}>
                               {inv.status === "pending" && !expired && (
                                 <>
-                                  <button onClick={() => copyInviteLink(inv.token)} style={btn("#f5f0e8","#0d0d0d")}>
+                                  <button onClick={() => copyInviteLink(inv.token)} style={btn("#f7f5f0","#14120e")}>
                                     {copiedToken === inv.token ? "Copied!" : "Copy Link"}
                                   </button>
-                                  <button onClick={() => revokeInvite(inv.token)} style={btn("#c94b2d15","#c94b2d")}>Revoke</button>
+                                  <button onClick={() => revokeInvite(inv.token)} style={btn("#b8953a15","#b8953a")}>Revoke</button>
                                 </>
                               )}
                             </div>
@@ -692,13 +803,138 @@ return { uid: d.id, ...userData, artworks, hasArtwork: artworks.length > 0 };
           </div>
         )}
 
+        {/* ── HOMEPAGE TAB ── */}
+        {tab === "homepage" && (
+          <div>
+            {homepageLoading ? (
+              <div style={{ padding: 40, textAlign: "center", color: "#6a7260" }}>Loading...</div>
+            ) : (
+              <>
+                {/* Featured Artists */}
+                <div style={{ background: "white", borderRadius: RADIUS, padding: "24px 28px", boxShadow: "0 2px 12px rgba(0,0,0,0.06)", marginBottom: 24 }}>
+                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", marginBottom: 4 }}>
+                    <div style={{ fontFamily: "'Cormorant Garamond',serif", fontSize: "1.3rem", fontWeight: 600 }}>Featured Artists</div>
+                    <div style={{ fontSize: "0.62rem", color: "#6a7260" }}>{homepageConfig.featuredArtistUids.length}/5 selected</div>
+                  </div>
+                  <p style={{ fontSize: "0.72rem", color: "#6a7260", marginBottom: 20, lineHeight: 1.6 }}>Select up to 5 artists to show in the homepage Artists section.</p>
+                  <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(220px, 1fr))", gap: 10 }}>
+                    {users.filter(u => u.hasArtwork).map(u => {
+                      const selected = homepageConfig.featuredArtistUids.includes(u.uid);
+                      const firstArt = u.artworks[0];
+                      return (
+                        <div key={u.uid} onClick={() => toggleFeaturedArtist(u.uid)}
+                          style={{ display: "flex", alignItems: "center", gap: 12, padding: "10px 14px", borderRadius: RADIUS, border: `1.5px solid ${selected ? "#b8953a" : "rgba(0,0,0,0.1)"}`, background: selected ? "#b8953a08" : "white", cursor: "pointer", transition: "all 0.15s" }}>
+                          <div style={{ width: 40, height: 40, borderRadius: "50%", overflow: "hidden", flexShrink: 0, background: "#e8e4db", display: "flex", alignItems: "center", justifyContent: "center", fontFamily: "'Cormorant Garamond',serif", fontSize: 16, color: "#6a7260" }}>
+                            {firstArt?.imageUrl
+                              ? <img src={firstArt.imageUrl} alt={u.name} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                              : u.name[0].toUpperCase()
+                            }
+                          </div>
+                          <div style={{ flex: 1, minWidth: 0 }}>
+                            <div style={{ fontSize: "0.78rem", fontWeight: 600, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{u.name}</div>
+                            <div style={{ fontSize: "0.62rem", color: "#6a7260" }}>{u.location} · {u.artworks.length} work{u.artworks.length !== 1 ? "s" : ""}</div>
+                          </div>
+                          {selected && <span style={{ color: "#b8953a", fontSize: "1rem", flexShrink: 0 }}>✓</span>}
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+
+                {/* Hero Images */}
+                <div style={{ background: "white", borderRadius: RADIUS, padding: "24px 28px", boxShadow: "0 2px 12px rgba(0,0,0,0.06)", marginBottom: 24 }}>
+                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", marginBottom: 4 }}>
+                    <div style={{ fontFamily: "'Cormorant Garamond',serif", fontSize: "1.3rem", fontWeight: 600 }}>Hero Images</div>
+                    <div style={{ fontSize: "0.62rem", color: "#6a7260" }}>{(homepageConfig.heroArtworks || []).length}/4 selected</div>
+                  </div>
+                  <p style={{ fontSize: "0.72rem", color: "#6a7260", marginBottom: 20, lineHeight: 1.6 }}>Select up to 4 artworks for the 2×2 grid on the hero section.</p>
+                  <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
+                    {users.filter(u => u.hasArtwork).map(u => (
+                      <div key={u.uid}>
+                        <div style={{ fontSize: "0.65rem", textTransform: "uppercase", letterSpacing: "0.1em", color: "#6a7260", marginBottom: 8 }}>{u.name}</div>
+                        <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
+                          {u.artworks.map(art => {
+                            const selected = (homepageConfig.heroArtworks || []).some(a => a.uid === u.uid && a.artworkId === art.id);
+                            return (
+                              <div key={art.id} onClick={() => toggleHeroArtwork(u.uid, art.id)}
+                                style={{ width: 100, cursor: "pointer", borderRadius: RADIUS, border: `2px solid ${selected ? "#2e3d2a" : "rgba(0,0,0,0.1)"}`, overflow: "hidden", transition: "border-color 0.15s", position: "relative" }}>
+                                <div style={{ height: 80, background: "#f7f5f0", overflow: "hidden" }}>
+                                  {art.imageUrl
+                                    ? <img src={art.imageUrl} alt={art.title} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                                    : <ArtSVG artwork={art} width={100} height={80} />
+                                  }
+                                </div>
+                                <div style={{ padding: "5px 7px", fontSize: "0.58rem", color: "#14120e", lineHeight: 1.3 }}>
+                                  {art.title || "Untitled"}
+                                </div>
+                                {selected && (
+                                  <div style={{ position: "absolute", top: 4, right: 4, background: "#2e3d2a", color: "white", borderRadius: "50%", width: 18, height: 18, display: "flex", alignItems: "center", justifyContent: "center", fontSize: "0.6rem" }}>✓</div>
+                                )}
+                              </div>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Featured Artworks */}
+                <div style={{ background: "white", borderRadius: RADIUS, padding: "24px 28px", boxShadow: "0 2px 12px rgba(0,0,0,0.06)", marginBottom: 24 }}>
+                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", marginBottom: 4 }}>
+                    <div style={{ fontFamily: "'Cormorant Garamond',serif", fontSize: "1.3rem", fontWeight: 600 }}>Featured Artworks</div>
+                    <div style={{ fontSize: "0.62rem", color: "#6a7260" }}>{homepageConfig.featuredArtworks.length}/4 selected</div>
+                  </div>
+                  <p style={{ fontSize: "0.72rem", color: "#6a7260", marginBottom: 20, lineHeight: 1.6 }}>Select up to 4 artworks to show in the "Available for exchange" section.</p>
+                  <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
+                    {users.filter(u => u.hasArtwork).map(u => (
+                      <div key={u.uid}>
+                        <div style={{ fontSize: "0.65rem", textTransform: "uppercase", letterSpacing: "0.1em", color: "#6a7260", marginBottom: 8 }}>{u.name}</div>
+                        <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
+                          {u.artworks.map(art => {
+                            const selected = homepageConfig.featuredArtworks.some(a => a.uid === u.uid && a.artworkId === art.id);
+                            return (
+                              <div key={art.id} onClick={() => toggleFeaturedArtwork(u.uid, art.id)}
+                                style={{ width: 100, cursor: "pointer", borderRadius: RADIUS, border: `2px solid ${selected ? "#b8953a" : "rgba(0,0,0,0.1)"}`, overflow: "hidden", transition: "border-color 0.15s", position: "relative" }}>
+                                <div style={{ height: 80, background: "#f7f5f0", overflow: "hidden" }}>
+                                  {art.imageUrl
+                                    ? <img src={art.imageUrl} alt={art.title} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                                    : <ArtSVG artwork={art} width={100} height={80} />
+                                  }
+                                </div>
+                                <div style={{ padding: "5px 7px", fontSize: "0.58rem", color: "#14120e", lineHeight: 1.3 }}>
+                                  {art.title || "Untitled"}
+                                </div>
+                                {selected && (
+                                  <div style={{ position: "absolute", top: 4, right: 4, background: "#b8953a", color: "white", borderRadius: "50%", width: 18, height: 18, display: "flex", alignItems: "center", justifyContent: "center", fontSize: "0.6rem" }}>✓</div>
+                                )}
+                              </div>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                <div style={{ display: "flex", alignItems: "center", gap: 16 }}>
+                  <button onClick={saveHomepage} style={btn("#14120e", "#f7f5f0", { padding: "11px 24px" })}>
+                    Save Homepage
+                  </button>
+                  {homepageSaved && <span style={{ fontSize: "0.7rem", color: "#5a7a5e" }}>Saved!</span>}
+                </div>
+              </>
+            )}
+          </div>
+        )}
+
         {/* ── SETTINGS TAB ── */}
         {tab === "settings" && (
           <div style={{ maxWidth: 540 }}>
-            <h2 style={{ fontFamily: "'Playfair Display',serif", fontSize: "1.6rem", fontWeight: 900, marginBottom: 8 }}>
+            <h2 style={{ fontFamily: "'Cormorant Garamond',serif", fontSize: "1.6rem", fontWeight: 600, marginBottom: 8 }}>
               Registration Settings
             </h2>
-            <p style={{ fontSize: "0.75rem", color: "#9e9589", lineHeight: 1.8, marginBottom: 32 }}>
+            <p style={{ fontSize: "0.75rem", color: "#6a7260", lineHeight: 1.8, marginBottom: 32 }}>
               Control how new users can join the platform. Changes take effect immediately after saving.
             </p>
 
@@ -710,7 +946,7 @@ return { uid: d.id, ...userData, artworks, hasArtwork: artworks.length > 0 };
               <div key={key} style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", padding: "20px 0", borderBottom: "1px solid rgba(0,0,0,0.06)" }}>
                 <div style={{ flex: 1, paddingRight: 24 }}>
                   <div style={{ fontSize: "0.82rem", fontWeight: 600, marginBottom: 4 }}>{label}</div>
-                  <div style={{ fontSize: "0.7rem", color: "#9e9589", lineHeight: 1.6 }}>{desc}</div>
+                  <div style={{ fontSize: "0.7rem", color: "#6a7260", lineHeight: 1.6 }}>{desc}</div>
                 </div>
                 {/* Toggle pill */}
                 <div
@@ -730,13 +966,13 @@ return { uid: d.id, ...userData, artworks, hasArtwork: artworks.length > 0 };
             ))}
 
             {!draftSettings.openRegistrationEnabled && !draftSettings.applicationsEnabled && !draftSettings.invitationsEnabled && (
-              <div style={{ background: "#c94b2d12", border: "1px solid #c94b2d30", borderRadius: RADIUS, padding: "12px 16px", marginTop: 20, fontSize: "0.72rem", color: "#c94b2d", lineHeight: 1.6 }}>
+              <div style={{ background: "#b8953a12", border: "1px solid #b8953a30", borderRadius: RADIUS, padding: "12px 16px", marginTop: 20, fontSize: "0.72rem", color: "#b8953a", lineHeight: 1.6 }}>
                 Warning: all registration paths are disabled. New users will be unable to join.
               </div>
             )}
 
             <div style={{ marginTop: 28, display: "flex", alignItems: "center", gap: 16 }}>
-              <button onClick={saveSettings} style={btn("#0d0d0d","#f5f0e8", { padding: "11px 24px" })}>
+              <button onClick={saveSettings} style={btn("#14120e","#f7f5f0", { padding: "11px 24px" })}>
                 Save Settings
               </button>
               {settingsSaved && <span style={{ fontSize: "0.7rem", color: "#5a7a5e" }}>Saved!</span>}

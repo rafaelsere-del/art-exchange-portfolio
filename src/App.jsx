@@ -13,9 +13,9 @@ import ProfilePage from "./pages/ProfilePage";
 import AdminPage from "./pages/AdminPage";
 
 const bodyStyle = {
-  fontFamily: "'DM Mono', monospace",
-  background: "#f5f0e8",
-  color: "#0d0d0d",
+  fontFamily: "'DM Sans', sans-serif",
+  background: "#f7f5f0",
+  color: "#14120e",
   minHeight: "100vh",
   overflowX: "hidden"
 };
@@ -79,7 +79,7 @@ export default function App() {
   return (
     <div style={bodyStyle}>
       <style>{`
-        @import url('https://fonts.googleapis.com/css2?family=DM+Mono:ital,wght@0,300;0,400;0,500;1,300;1,400;1,500&family=Playfair+Display:ital,wght@0,400;0,700;0,900;1,400;1,700;1,900&display=swap');
+        @import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;1,300;1,400;1,600&family=DM+Sans:wght@300;400;500&display=swap');
         * { box-sizing: border-box; margin: 0; padding: 0; }
         @media (max-width: 600px) {
           img { max-width: 100%; height: auto; }
@@ -105,7 +105,7 @@ export default function App() {
         {page === "matches" && user && <MatchesPage user={user} />}
         {page === "profile" && user && <ProfilePage user={user} setUser={setUser} setPage={setPage} />}
         {page === "admin"   && user && isAdmin && <AdminPage user={user} setPage={setPage} settings={settings} setSettings={setSettings} />}
-        {page === "admin"   && user && !isAdmin && <div style={{ padding: "120px 40px", textAlign: "center", color: "#9e9589" }}>Access denied.</div>}
+        {page === "admin"   && user && !isAdmin && <div style={{ padding: "120px 40px", textAlign: "center", color: "#6a7260" }}>Access denied.</div>}
         {!user && !["home","auth","apply"].includes(page) && <AuthPage
                                                                 setUser={handleSetUser}
                                                                 setPage={setPage}
