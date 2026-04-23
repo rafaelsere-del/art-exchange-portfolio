@@ -254,7 +254,7 @@ export default function HomePage({ setPage }) {
 
           {/* UPDATED headline */}
           <h1 className="headline">
-            The real value of<br />art <em>art</em>
+            The real value <br />of <em>art</em>
           </h1>
 
           {/* UPDATED lede */}
