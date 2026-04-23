@@ -1,335 +1,450 @@
-import { useState, useEffect } from "react";
-import { db } from "../firebase";
+import { useEffect, useState } from "react";
 import { doc, getDoc } from "firebase/firestore";
-import ArtSVG from "../components/ArtSVG";
-import { NEGRO, VERDE, ORO, CREMA, CREMA_DARK, MUTED, BORDER, RADIUS } from "../styles/theme";
+import { db } from "../firebase";
+import ManifestoGrid from "../components/ManifestoGrid";
+import WaitlistForm from "../components/WaitlistForm";
+import "./HomePage.css";
 
-const MOCK_ARTWORKS = [
-  { id: 1, title: "Golden Hour Study", artist: "Sofia Kwan",  initials: "SK", avatarBg: "#3d2a10", color1: "#c8b870", color2: "#d4a030", shape: "lines",    medium: "Oil · 120×90cm",        seeking: "ceramics",    status: "open"    },
-  { id: 2, title: "Verdant No. 3",    artist: "Mina Vasquez", initials: "MV", avatarBg: "#1a2e20", color1: "#2d4a3e", color2: "#8fa58a", shape: "blocks",   medium: "Acrylic · 60×60cm",     seeking: "photography", status: "matched" },
-  { id: 3, title: "Liminal Space I",  artist: "Yuki Tanaka",  initials: "YT", avatarBg: "#1e1a35", color1: "#3a3a5c", color2: "#7a7aac", shape: "circle",   medium: "Digital · Ed. 1/5",     seeking: "painting",    status: "open"    },
-  { id: 4, title: "Descent",          artist: "Elton Marsh",  initials: "EM", avatarBg: "#382018", color1: "#c8a888", color2: "#a87858", shape: "triangle", medium: "Watercolour · 50×70cm", seeking: "any medium",  status: "open"    },
+const HERO_FALLBACK = [
+  { id: 1, title: "The portrait of fire",  artist: "Rafael Sava", imageUrl: null, ph: "art-ph-1" },
+  { id: 2, title: "King in blue",           artist: "Rafael Sava", imageUrl: null, ph: "art-ph-2" },
+  { id: 3, title: "The wood is changing",   artist: "Rafael Sava", imageUrl: null, ph: "art-ph-3" },
+  { id: 4, title: "It will come",           artist: "Rafael Sava", imageUrl: null, ph: "art-ph-4" },
 ];
 
 const MOCK_ARTISTS = [
-  { initials: "SK", name: "Sofia Kwan",   location: "London, UK",  works: 4, bg: "#3d2a10" },
-  { initials: "MV", name: "Mina Vasquez", location: "Barcelona",   works: 7, bg: "#1a2e20" },
-  { initials: "YT", name: "Yuki Tanaka",  location: "Tokyo",       works: 2, bg: "#1e1a35" },
-  { initials: "EM", name: "Elton Marsh",  location: "New York",    works: 5, bg: "#2e3d2a" },
-  { initials: "CL", name: "Clara Liu",    location: "Paris",       works: 3, bg: "#1e2a38" },
+  { uid: 1, name: "Paula Jordana",  location: "Bucharest, Romania",  artworkCount: 3, profileImageUrl: null },
+  { uid: 2, name: "Andrei Popescu", location: "Montevideo, Uruguay", artworkCount: 2, profileImageUrl: null },
+  { uid: 3, name: "Luca Bianchi",   location: "Torino, Italy",       artworkCount: 4, profileImageUrl: null },
+  { uid: 4, name: "Stefan Müller",  location: "Vienna, Austria",     artworkCount: 2, profileImageUrl: null },
+  { uid: 5, name: "Rafael Sava",    location: "Lisbon, Portugal",    artworkCount: 7, profileImageUrl: null },
 ];
 
-function AxiaLogoSmall() {
+const PH_CLASSES = ["art-ph-1", "art-ph-2", "art-ph-3", "art-ph-4"];
+
+function initials(name) {
+  return name?.split(" ").map(w => w[0]).join("").slice(0, 2).toUpperCase() || "?";
+}
+
+/* ─── Action system preview data ─── */
+const ACTIONS = [
+  {
+    id: "resonance",
+    icon: "◎",
+    name: "Send resonance",
+    desc: "A signal that this work moved you",
+    tier: "free",
+    tierLabel: "Free",
+  },
+  {
+    id: "response",
+    icon: "◌",
+    name: "Open a response",
+    desc: "Written reactions from the community",
+    tier: "member",
+    tierLabel: "Member",
+  },
+  {
+    id: "dialogue",
+    icon: "◈",
+    name: "Start a dialogue",
+    desc: "Peer-to-peer, private, structured",
+    tier: "member",
+    tierLabel: "Member",
+  },
+  {
+    id: "exchange",
+    icon: "⇄",
+    name: "Propose an exchange",
+    desc: "Trade work with another artist. No money.",
+    tier: "founder",
+    tierLabel: "Founder",
+  },
+];
+
+const TIER_GUIDE = [
+  {
+    tier: "free",
+    tierLabel: "Free",
+    desc: "Discover works, send resonance, save to your personal collection, follow artists.",
+  },
+  {
+    tier: "member",
+    tierLabel: "Member",
+    desc: "Upload your work, choose up to 3 actions per piece, access peer dialogue, gallery and collector feedback.",
+  },
+  {
+    tier: "founder",
+    tierLabel: "Founder",
+    desc: "All member access, artwork exchange, governance voice, and a stake in what Axia becomes.",
+  },
+];
+
+/* ─── Tier badge helper ─── */
+function TierBadge({ tier, tierLabel }) {
+  const styles = {
+    free:    { background: "#E1F5EE", color: "#0F6E56" },
+    member:  { background: "#FAEEDA", color: "#854F0B" },
+    founder: { background: "#EEEDFE", color: "#3C3489" },
+  };
   return (
-    <svg width="170" height="26" viewBox="0 0 170 26" xmlns="http://www.w3.org/2000/svg">
-      <text x="67" y="19" fontFamily="'Cormorant Garamond',serif" fontSize="16" fontWeight="400" letterSpacing="4" fill={CREMA} textAnchor="end">AXIA</text>
-      <g transform="translate(77,5)">
-        <line x1="0" y1="5" x2="11" y2="5" stroke={ORO} strokeWidth="0.7" strokeLinecap="round"/>
-        <line x1="11" y1="5" x2="8" y2="7.5" stroke={ORO} strokeWidth="0.7" strokeLinecap="round"/>
-        <line x1="11" y1="11" x2="0" y2="11" stroke={ORO} strokeWidth="0.7" strokeLinecap="round"/>
-        <line x1="0" y1="11" x2="3" y2="8.5" stroke={ORO} strokeWidth="0.7" strokeLinecap="round"/>
-      </g>
-      <text x="98" y="19" fontFamily="'Cormorant Garamond',serif" fontSize="16" fontWeight="400" letterSpacing="4" fill={CREMA}>ART</text>
-    </svg>
+    <span
+      className="action-tier-badge"
+      style={{
+        fontSize: "11px",
+        fontWeight: 500,
+        padding: "2px 8px",
+        borderRadius: "4px",
+        flexShrink: 0,
+        ...(styles[tier] || {}),
+      }}
+    >
+      {tierLabel}
+    </span>
   );
 }
 
-const HOW_STEPS = [
-  {
-    n: "01", title: "List your work",
-    desc: "Upload works you're willing to trade. Photos, paintings, sculpture, digital — if you made it, it belongs here.",
-    icon: (
-      <svg width="22" height="22" viewBox="0 0 22 22" fill="none" xmlns="http://www.w3.org/2000/svg">
-        <rect x="2" y="2" width="18" height="18" rx="1.5" stroke={ORO} strokeWidth="1"/>
-        <line x1="6" y1="7" x2="16" y2="7" stroke={ORO} strokeWidth="1"/>
-        <line x1="6" y1="11" x2="16" y2="11" stroke={ORO} strokeWidth="1"/>
-        <line x1="6" y1="15" x2="11" y2="15" stroke={ORO} strokeWidth="1"/>
-      </svg>
-    )
-  },
-  {
-    n: "02", title: "Discover & save",
-    desc: "Browse works from artists around the world. Save the ones that move you. Take your time — this is about genuine connection.",
-    icon: (
-      <svg width="22" height="22" viewBox="0 0 22 22" fill="none" xmlns="http://www.w3.org/2000/svg">
-        <circle cx="11" cy="11" r="8" stroke={ORO} strokeWidth="1"/>
-        <circle cx="11" cy="11" r="3" stroke={ORO} strokeWidth="1"/>
-        <line x1="11" y1="3" x2="11" y2="5" stroke={ORO} strokeWidth="1"/>
-        <line x1="11" y1="17" x2="11" y2="19" stroke={ORO} strokeWidth="1"/>
-        <line x1="3" y1="11" x2="5" y2="11" stroke={ORO} strokeWidth="1"/>
-        <line x1="17" y1="11" x2="19" y2="11" stroke={ORO} strokeWidth="1"/>
-      </svg>
-    )
-  },
-  {
-    n: "03", title: "Propose an exchange",
-    desc: "Offer one of your works for theirs. Chat directly. No intermediaries, no platform fees. Just two artists agreeing on value.",
-    icon: (
-      <svg width="22" height="22" viewBox="0 0 22 22" fill="none" xmlns="http://www.w3.org/2000/svg">
-        <line x1="2" y1="11" x2="20" y2="11" stroke={ORO} strokeWidth="1"/>
-        <line x1="20" y1="11" x2="15" y2="6" stroke={ORO} strokeWidth="1" strokeLinecap="round"/>
-        <line x1="2" y1="11" x2="7" y2="16" stroke={ORO} strokeWidth="1" strokeLinecap="round"/>
-      </svg>
-    )
-  },
-  {
-    n: "04", title: "Ship & collect",
-    desc: "Exchange your pieces. You're now an art collector — chosen by another artist who saw value in yours.",
-    icon: (
-      <svg width="22" height="22" viewBox="0 0 22 22" fill="none" xmlns="http://www.w3.org/2000/svg">
-        <rect x="3" y="9" width="16" height="11" rx="1.5" stroke={ORO} strokeWidth="1"/>
-        <path d="M7.5 9V7a3.5 3.5 0 0 1 7 0v2" stroke={ORO} strokeWidth="1"/>
-        <circle cx="11" cy="14.5" r="1.5" fill={ORO}/>
-      </svg>
-    )
-  },
-];
+/* ─── Action system preview section ─── */
+function ActionPreview({ setPage }) {
+  return (
+    <section className="block action-preview-section">
+      <div className="sec-panel">
 
-const CARD = { borderRadius: 16, overflow: "hidden" };
+        <div className="sec-head" style={{ flexDirection: "column", alignItems: "flex-start", gap: "0.4rem", marginBottom: "2rem" }}>
+          <p style={{ fontSize: "11px", fontWeight: 500, letterSpacing: "0.08em", textTransform: "uppercase", color: "var(--color-ash, #8c8075)", margin: 0 }}>
+            Inside Axia
+          </p>
+          <h2 style={{ margin: 0 }}>The artist chooses what the work invites.</h2>
+          <p style={{ fontSize: "1.05rem", color: "var(--color-ash, #8c8075)", maxWidth: "520px", lineHeight: 1.65, margin: 0 }}>
+            Every artwork you share opens differently. You decide what kind of engagement
+            you want — per work, per moment, per state of readiness.
+          </p>
+        </div>
 
+        <div className="action-preview-grid">
+
+          {/* ── Left: artwork card ── */}
+          <div className="ap-card">
+
+            {/* artwork image placeholder */}
+            <div className="ap-img">
+              <div className="ap-img-inner">
+                <svg width="44" height="44" viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg" style={{ opacity: 0.25, display: "block", margin: "0 auto 8px" }}>
+                  <rect x="6" y="10" width="36" height="28" rx="2" stroke="rgba(245,240,232,0.6)" strokeWidth="1"/>
+                  <circle cx="16" cy="20" r="4" stroke="rgba(245,240,232,0.6)" strokeWidth="1"/>
+                  <path d="M6 30 L16 22 L24 28 L32 20 L42 30" stroke="rgba(245,240,232,0.6)" strokeWidth="1" strokeLinejoin="round"/>
+                </svg>
+                <span className="ap-img-label">Your artwork here</span>
+              </div>
+            </div>
+
+            {/* artwork meta */}
+            <div className="ap-meta">
+              <div className="ap-title">King in blue</div>
+              <div className="ap-artist">Rafael Sava</div>
+              <div className="ap-medium">Acrylic on canvas · 80×60 cm · 2024</div>
+            </div>
+
+            {/* action rows */}
+            <div className="ap-actions">
+              <p className="ap-actions-label">Actions open for this work</p>
+              {ACTIONS.map((action) => (
+                <div className="ap-action-row" key={action.id}>
+                  <div className="ap-action-icon">{action.icon}</div>
+                  <div className="ap-action-info">
+                    <div className="ap-action-name">{action.name}</div>
+                    <div className="ap-action-desc">{action.desc}</div>
+                  </div>
+                  <TierBadge tier={action.tier} tierLabel={action.tierLabel} />
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* ── Right: pull quote + tier guide + CTA ── */}
+          <div className="ap-right">
+
+            {/* pull quote */}
+            <blockquote className="ap-pull">
+              <p>"The rarest thing you can give another artist is not money, not exposure — it is your full, considered attention."</p>
+              <cite>— Axia founding principle</cite>
+            </blockquote>
+
+            {/* tier guide */}
+            <div className="ap-tier-guide">
+              <p className="ap-tier-guide-label">Who can do what</p>
+              {TIER_GUIDE.map((row) => (
+                <div className="ap-tier-row" key={row.tier}>
+                  <TierBadge tier={row.tier} tierLabel={row.tierLabel} />
+                  <p className="ap-tier-desc">{row.desc}</p>
+                </div>
+              ))}
+            </div>
+
+            {/* CTA strip */}
+            <div className="ap-cta-strip">
+              <p>Founder membership is open now, for a limited time. The first cohort shapes everything that follows.</p>
+              <button className="ap-cta-btn" onClick={() => setPage("auth")}>
+                Learn about the founders campaign →
+              </button>
+            </div>
+
+          </div>
+        </div>
+      </div>
+    </section>
+  );
+}
+
+/* ═══════════════════════════════════════════════
+   HOMEPAGE
+═══════════════════════════════════════════════ */
 export default function HomePage({ setPage }) {
-  const [featuredArtists, setFeaturedArtists] = useState(null);
-  const [featuredArtworks, setFeaturedArtworks] = useState(null);
-  const [heroArtworks, setHeroArtworks] = useState(null);
+  const [heroArtworks, setHeroArtworks] = useState([]);
+  const [artists, setArtists]           = useState(MOCK_ARTISTS);
 
   useEffect(() => {
-    const load = async () => {
-      try {
-        const snap = await getDoc(doc(db, "settings", "homepage"));
-        if (!snap.exists()) { setFeaturedArtists([]); setFeaturedArtworks([]); return; }
-        const { artistSnapshots = [], artworkSnapshots = [], heroSnapshots = [] } = snap.data();
-        setFeaturedArtists(artistSnapshots);
-        setFeaturedArtworks(artworkSnapshots);
-        setHeroArtworks(heroSnapshots);
-      } catch (e) {
-        console.error("[HomePage] Firestore load error:", e.code, e.message);
-        setFeaturedArtists([]);
-        setFeaturedArtworks([]);
-        setHeroArtworks([]);
-      }
-    };
-    load();
+    getDoc(doc(db, "settings", "homepage")).then((snap) => {
+      if (!snap.exists()) return;
+      const data = snap.data();
+      if (data.heroSnapshots?.length)   setHeroArtworks(data.heroSnapshots);
+      if (data.artistSnapshots?.length) setArtists(data.artistSnapshots);
+    }).catch(() => {});
   }, []);
 
-  // Use real data if loaded, fall back to mocks while loading or if empty
-  const displayHeroArtworks   = (heroArtworks    && heroArtworks.length    > 0) ? heroArtworks    : MOCK_ARTWORKS;
-  const displayArtworks       = (featuredArtworks && featuredArtworks.length > 0) ? featuredArtworks : MOCK_ARTWORKS;
-  const displayArtists        = (featuredArtists  && featuredArtists.length  > 0) ? featuredArtists  : MOCK_ARTISTS;
+  const heroTiles = heroArtworks.length ? heroArtworks : HERO_FALLBACK;
+
   return (
-    <div style={{ fontFamily: "'DM Sans', sans-serif", background: "white", padding: 12, paddingTop: 70, display: "flex", flexDirection: "column", gap: 12 }}>
-      <style>{`
-        .home-hero { display: grid; grid-template-columns: 3fr 2fr; min-height: 480px; }
-        .hero-art-grid { display: grid; grid-template-columns: 1fr 1fr; grid-template-rows: 1fr 1fr; gap: 3px; padding: 3px; }
-        .works-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; }
-        .how-steps { display: grid; grid-template-columns: repeat(4, 1fr); }
-        .artist-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 10px; }
-        .home-footer { display: flex; justify-content: space-between; align-items: center; }
+    <div className="axia-home">
 
-        @media (max-width: 600px) {
-          .home-hero { grid-template-columns: 1fr !important; }
-          .hero-art-grid { display: none !important; }
-          .hero-left { padding: 40px 24px 36px !important; }
-          .works-grid { grid-template-columns: 1fr !important; }
-          .how-steps { grid-template-columns: 1fr 1fr !important; }
-          .artist-grid { grid-template-columns: 1fr 1fr !important; }
-          .home-footer { flex-direction: column; gap: 20px; text-align: center; }
-          .footer-links { flex-wrap: wrap; justify-content: center; }
-          .stats-bar { flex-wrap: wrap; }
-        }
-      `}</style>
+      {/* ── TOP BAR ── */}
+      <header className="topbar">
+        <div className="logo">
+          <svg width="260" height="38" viewBox="0 0 260 38" xmlns="http://www.w3.org/2000/svg">
+            <text x="104" y="28" fontFamily="'Cormorant Garamond',serif" fontSize="26" fontWeight="400" letterSpacing="6" textAnchor="end" fill="#f7f5f0">AXIA</text>
+            <g transform="translate(118,10)">
+              <line x1="0"  y1="6.5" x2="16"  y2="6.5"  stroke="#b8953a" strokeWidth="1" strokeLinecap="round"/>
+              <line x1="16" y1="6.5" x2="11.5" y2="11"  stroke="#b8953a" strokeWidth="1" strokeLinecap="round"/>
+              <line x1="16" y1="16"  x2="0"   y2="16"   stroke="#b8953a" strokeWidth="1" strokeLinecap="round"/>
+              <line x1="0"  y1="16"  x2="4.5" y2="11.5" stroke="#b8953a" strokeWidth="1" strokeLinecap="round"/>
+            </g>
+            <text x="148" y="28" fontFamily="'Cormorant Garamond',serif" fontSize="26" fontWeight="400" letterSpacing="6" fill="#f7f5f0">ART</text>
+          </svg>
+        </div>
+        <nav className="topbar-nav" aria-label="Primary" style={{ display: "flex", gap: "2rem" }}>
+          <a href="#manifesto">Manifesto</a>
+          <a href="#how-it-works">How it works</a>
+          {/* UPDATED: "Founding cohort" → "Founders campaign" */}
+          <a href="#founders-campaign">Founders campaign</a>
+        </nav>
+        {/* UPDATED: "Join the waitlist" → "Become a founder" */}
+        <a className="join" onClick={() => setPage("auth")} style={{ cursor: "pointer" }}>
+          Become a founder
+        </a>
+      </header>
 
-      {/* HERO CARD */}
-      <div style={CARD}>
-        <div className="home-hero" style={{ background: VERDE }}>
-          <div className="hero-left" style={{ padding: "4.5rem 2.5rem 4rem", display: "flex", flexDirection: "column", justifyContent: "center", textAlign: "left" }}>
-            <h1 style={{ fontFamily: "'Cormorant Garamond', serif", fontSize: "clamp(2.8rem,4vw,3.4rem)", fontWeight: 400, lineHeight: 1.05, color: CREMA, marginBottom: "1.25rem", letterSpacing: 0 }}>
-              Where artists become<br /><em>collectors.</em>
-            </h1>
-            <p style={{ fontSize: "14px", fontWeight: 300, color: "#b8c8a8", lineHeight: 1.75, maxWidth: 340, marginBottom: "1.75rem" }}>
-              Exchange your work with artists you admire. No money. No galleries. Just the pure transfer of creative vision between people who understand its value.
-            </p>
-            <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: "1.5rem" }}>
-              <svg width="20" height="14" viewBox="0 0 20 14" fill="none" xmlns="http://www.w3.org/2000/svg">
-                <line x1="0" y1="3.5" x2="20" y2="3.5" stroke={ORO} strokeWidth="1" strokeLinecap="round"/>
-                <polyline points="14,0 20,3.5 14,7" fill="none" stroke={ORO} strokeWidth="1" strokeLinejoin="round" strokeLinecap="round"/>
-                <line x1="20" y1="10.5" x2="0" y2="10.5" stroke={ORO} strokeWidth="1" strokeLinecap="round"/>
-                <polyline points="6,7 0,10.5 6,14" fill="none" stroke={ORO} strokeWidth="1" strokeLinejoin="round" strokeLinecap="round"/>
-              </svg>
-              <span style={{ fontSize: "10px", letterSpacing: "0.16em", textTransform: "uppercase", color: "#6a8a5a" }}>The art exchange</span>
-            </div>
-            <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
-              <button
-                onClick={() => setPage("auth")}
-                style={{ background: CREMA, color: NEGRO, fontSize: "12px", letterSpacing: "0.09em", textTransform: "uppercase", padding: "13px 28px", borderRadius: RADIUS, border: "none", fontFamily: "'DM Sans', sans-serif", cursor: "pointer", fontWeight: 500 }}
-                onMouseOver={e => e.currentTarget.style.opacity = "0.88"}
-                onMouseOut={e => e.currentTarget.style.opacity = "1"}
-              >
-                Apply to join
-              </button>
-              <button
-                onClick={() => document.getElementById("works")?.scrollIntoView({ behavior: "smooth" })}
-                style={{ background: "transparent", color: CREMA, fontSize: "12px", letterSpacing: "0.09em", textTransform: "uppercase", padding: "12px 28px", borderRadius: RADIUS, border: `1.5px solid ${CREMA}`, fontFamily: "'DM Sans', sans-serif", cursor: "pointer", fontWeight: 400 }}
-                onMouseOver={e => { e.currentTarget.style.background = "rgba(247,245,240,0.1)"; }}
-                onMouseOut={e => { e.currentTarget.style.background = "transparent"; }}
-              >
-                See the works
-              </button>
-            </div>
+      {/* ── HERO ── */}
+      <section className="hero">
+        <div className="hero-left">
+          {/* UPDATED eyebrow */}
+          <div className="eyebrow">
+            <span className="dot" />
+            Founders campaign open · Limited seats
           </div>
 
-          <div className="hero-art-grid">
-            {displayHeroArtworks.map(art => (
-              <div key={art.id} style={{ position: "relative", overflow: "hidden", minHeight: 130 }}>
+          {/* UPDATED headline */}
+          <h1 className="headline">
+            The real value of<br />art <em>art</em>
+          </h1>
+
+          {/* UPDATED lede */}
+          <p className="lede">
+            Not as a market. Not as a career ladder. As the force it actually is —
+            the thing that has always been at the centre of every human revolution
+            worth remembering.
+          </p>
+          <p className="lede" style={{ marginTop: "1rem" }}>
+            A membership for artists who want to be seen, challenged,
+            and changed by each other.
+          </p>
+
+          {/* UPDATED CTAs */}
+          <div className="hero-ctas">
+            <a className="btn btn-primary" onClick={() => setPage("auth")} style={{ cursor: "pointer" }}>
+              Become a founder →
+            </a>
+            <a className="btn btn-ghost" href="#manifesto">Read the manifesto</a>
+          </div>
+
+          <div className="waitlist-meta">
+            <span>On the waitlist</span>
+            <span className="count">◇ 248 artists</span>
+            <span>· 61 collectors</span>
+          </div>
+        </div>
+
+        <div className="hero-right">
+          <div className="art-grid">
+            {heroTiles.map((art, i) => (
+              <figure className="art-tile" key={art.id || i}>
                 {art.imageUrl
                   ? <img src={art.imageUrl} alt={art.title} style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }} />
-                  : <ArtSVG artwork={art} width={400} height={220} />
+                  : <div className={`art-ph ${art.ph || PH_CLASSES[i % 4]}`}><span>{art.title?.toUpperCase()}</span></div>
                 }
-                <div style={{ position: "absolute", bottom: 0, left: 0, right: 0, height: "55%", background: "linear-gradient(to top, rgba(20,18,14,0.8) 0%, transparent 100%)" }} />
-                <div style={{ position: "absolute", bottom: 0, left: 0, right: 0, padding: "9px 11px" }}>
-                  <div style={{ fontFamily: "'Cormorant Garamond', serif", fontSize: 13, color: CREMA, fontWeight: 400, lineHeight: 1.2 }}>{art.title}</div>
-                  <div style={{ fontSize: 10, color: "rgba(247,245,240,0.55)" }}>{art.artist}</div>
-                </div>
-              </div>
+                <figcaption>
+                  <span className="ttl">{art.title}</span>
+                  <span className="who">{art.artist}</span>
+                </figcaption>
+              </figure>
             ))}
           </div>
         </div>
+      </section>
 
-        {/* STATS — inside hero card */}
-        <div className="stats-bar" style={{ background: NEGRO, display: "flex", justifyContent: "center" }}>
-          {[
-            { n: "4.2k", l: "Artists" },
-            { n: "1.8k", l: "Works listed" },
-            { n: "930+", l: "Exchanges completed" },
-            { n: "38",   l: "Countries" },
-          ].map(s => (
-            <div key={s.l} style={{ padding: "1.25rem 2.5rem", textAlign: "center", borderRight: "0.5px solid #222018", flex: "1 1 auto" }}>
-              <div style={{ fontFamily: "'Cormorant Garamond', serif", fontSize: 28, fontWeight: 400, color: CREMA }}>{s.n}</div>
-              <div style={{ fontSize: 10, letterSpacing: "0.1em", textTransform: "uppercase", color: "#5a5848", marginTop: 2 }}>{s.l}</div>
-            </div>
-          ))}
-        </div>
+      {/* ── VALUES BAR — UPDATED: stats → commitments ── */}
+      <div className="values">
+        <div className="val"><span className="k">No selling</span><span className="v">ever</span></div>
+        <div className="val"><span className="k">No galleries</span><span className="v">no intermediaries</span></div>
+        <div className="val"><span className="k">No price tags</span><span className="v">only resonance</span></div>
+        <div className="val"><span className="k">No noise</span><span className="v">only signal</span></div>
       </div>
 
-      {/* WORKS CARD */}
-      <div id="works" style={{ ...CARD, background: CREMA }}>
-        <div style={{ padding: "3.5rem 2.5rem" }}>
-          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", marginBottom: "1.75rem" }}>
-            <h2 style={{ fontFamily: "'Cormorant Garamond', serif", fontSize: 34, fontWeight: 400, color: NEGRO }}>Available for exchange</h2>
-            <span style={{ fontSize: 11, letterSpacing: "0.07em", textTransform: "uppercase", color: MUTED, borderBottom: `0.5px solid ${BORDER}`, paddingBottom: 1, cursor: "pointer" }}>View all 1,847 works →</span>
+      {/* ── ACTION SYSTEM PREVIEW — replaces "Available for exchange" ── */}
+      <ActionPreview setPage={setPage} />
+
+      {/* ── MANIFESTO ── */}
+      <ManifestoGrid />
+
+      {/* ── FOUR MOVES — UPDATED: full action system ── */}
+      <section className="moves" id="how-it-works">
+        {/* UPDATED title + lede */}
+        <h2>Four ways to be in conversation.</h2>
+        <div className="lede">Each artwork you share opens a door. You choose what comes through it.</div>
+        <div className="moves-grid">
+          <div className="mv-step">
+            <div className="num">01</div>
+            <div className="icon">◎</div>
+            {/* UPDATED */}
+            <h4>Send resonance</h4>
+            <p>More than a like — a signal that this work moved you. Resonance accumulates into a score that means something, because it comes from people who chose to give it.</p>
           </div>
-          <div className="works-grid">
-            {displayArtworks.map(art => (
-              <div key={art.id} style={{ borderRadius: 4, overflow: "hidden", border: `0.5px solid ${BORDER}`, background: "white" }}>
-                <div style={{ height: 175, overflow: "hidden", position: "relative" }}>
-                  {art.imageUrl
-                    ? <img src={art.imageUrl} alt={art.title} style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }} />
-                    : <ArtSVG artwork={art} width={400} height={175} />
-                  }
-                  <div style={{ position: "absolute", top: 0, left: 0, right: 0, height: "36%", background: "linear-gradient(to bottom, rgba(20,18,14,0.25) 0%, transparent 100%)" }} />
-                  <div style={{
-                    position: "absolute", top: 9, left: 9,
-                    fontSize: 9, letterSpacing: "0.07em", textTransform: "uppercase",
-                    padding: "3px 8px", borderRadius: 2, fontFamily: "'DM Sans', sans-serif",
-                    ...(art.status === "open"
-                      ? { background: "rgba(46,61,42,0.13)", color: "#2e3d2a", border: "0.5px solid rgba(46,61,42,0.32)" }
-                      : { background: "rgba(106,114,96,0.1)", color: "#4a5240", border: "0.5px solid rgba(106,114,96,0.28)" })
-                  }}>
-                    {art.status === "open" ? "Open" : "Matched"}
-                  </div>
-                  <div style={{
-                    position: "absolute", bottom: 9, right: 9,
-                    width: 27, height: 27, borderRadius: "50%",
-                    border: `1px solid rgba(184,149,58,0.4)`,
-                    background: art.avatarBg,
-                    display: "flex", alignItems: "center", justifyContent: "center",
-                    fontFamily: "'Cormorant Garamond', serif", fontSize: 10, color: CREMA
-                  }}>
-                    {art.initials}
-                  </div>
-                </div>
-                <div style={{ padding: "10px 12px 12px" }}>
-                  <div style={{ fontSize: 9, letterSpacing: "0.09em", textTransform: "uppercase", color: "#a09870", marginBottom: 3 }}>{art.medium}</div>
-                  <div style={{ fontFamily: "'Cormorant Garamond', serif", fontSize: 16, color: NEGRO, lineHeight: 1.2, marginBottom: 2 }}>{art.title}</div>
-                  <div style={{ fontSize: 11, color: MUTED, marginBottom: 8 }}>{art.artist}</div>
-                  <hr style={{ border: "none", borderTop: `0.5px solid ${CREMA_DARK}`, marginBottom: 8 }} />
-                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                    <div style={{ fontSize: 10, color: "#a09870" }}>Seeking <span style={{ color: MUTED }}>{art.seeking}</span></div>
-                    {art.status === "open" ? (
-                      <button onClick={() => setPage("auth")} style={{ background: VERDE, color: CREMA, fontSize: 9, letterSpacing: "0.07em", textTransform: "uppercase", padding: "5px 11px", borderRadius: 2, border: "none", fontFamily: "'DM Sans', sans-serif", cursor: "pointer", fontWeight: 400 }}>
-                        Offer exchange
-                      </button>
-                    ) : (
-                      <span style={{ fontSize: 9, letterSpacing: "0.07em", textTransform: "uppercase", color: "#a09870", fontFamily: "'DM Sans', sans-serif" }}>Matched</span>
-                    )}
-                  </div>
-                </div>
-              </div>
-            ))}
+          <div className="mv-step">
+            <div className="num">02</div>
+            <div className="icon">◌</div>
+            {/* UPDATED */}
+            <h4>Open a response</h4>
+            <p>Invite written reactions from the community. Not critique — response. What did this work make you feel, remember, imagine? The artist can close this at any time.</p>
+          </div>
+          <div className="mv-step">
+            <div className="num">03</div>
+            <div className="icon">◈</div>
+            {/* UPDATED */}
+            <h4>Start a dialogue</h4>
+            <p>Peer to peer, private, structured. Invite specific members into a real conversation about the work. The kind of exchange that used to require knowing the right people.</p>
+          </div>
+          <div className="mv-step">
+            <div className="num">04</div>
+            <div className="icon">⇄</div>
+            {/* UPDATED — Exchange is now the climax */}
+            <h4>Propose an exchange</h4>
+            <p>The most radical move. Offer one of your works for theirs. No money. No galleries. Two artists recognising each other's vision and choosing to live with it.</p>
           </div>
         </div>
-      </div>
+      </section>
 
-      {/* HOW IT WORKS CARD */}
-      <div style={CARD}>
-        <div style={{ background: "#1e2a1a", padding: "4.5rem 2.5rem" }}>
-          <h2 style={{ fontFamily: "'Cormorant Garamond', serif", fontSize: 38, fontWeight: 400, color: CREMA, textAlign: "center", marginBottom: "0.4rem" }}>Four moves. One exchange.</h2>
-          <p style={{ fontSize: 12, color: "#7a9068", textAlign: "center", letterSpacing: "0.05em", marginBottom: "3rem" }}>The entire process from listing to collecting.</p>
-          <div className="how-steps">
-            {HOW_STEPS.map((s, i) => (
-              <div key={s.n} style={{ padding: "1.75rem", borderRight: i < 3 ? `0.5px solid #2e3e28` : "none", textAlign: "center" }}>
-                <div style={{ fontFamily: "'Cormorant Garamond', serif", fontSize: 52, fontWeight: 300, color: "rgba(247,245,240,0.18)", lineHeight: 1, marginBottom: "0.75rem" }}>{s.n}</div>
-                <div style={{ margin: "0 auto 0.85rem", width: 42, height: 42, border: `1px solid rgba(184,149,58,0.45)`, borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center" }}>
-                  {s.icon}
-                </div>
-                <div style={{ fontFamily: "'Cormorant Garamond', serif", fontSize: 18, color: CREMA, marginBottom: "0.5rem", fontWeight: 400 }}>{s.title}</div>
-                <p style={{ fontSize: 12, color: "#8a9e7a", lineHeight: 1.65, fontWeight: 300 }}>{s.desc}</p>
-              </div>
-            ))}
+      {/* ── FOUNDER'S LETTER — unchanged, it's already perfect ── */}
+      <section className="block">
+        <div className="letter">
+          <div className="lhs">
+            <div className="seal">A</div>
+            <div className="label">◇ Letter from the founder</div>
+            <h3>Why we're starting small, on purpose.</h3>
+          </div>
+          <div className="rhs">
+            <p>I'm building Axia because I'm tired of watching artists hand half their income to galleries, and watching collectors pretend art is an asset class.</p>
+            <p>For now, it's just <em>me and my studio.</em> The works you'd see here are mine. I'd rather show you an honest empty room than fake a crowd.</p>
+            <p>If the idea resonates, join the waitlist. When we open, we'll let in <em>thirty artists</em> as a founding cohort. Small, deliberate, real.</p>
+            <div className="sign">— Rafael</div>
+            <div className="sign-name">Rafael Sava · Founder, Axia Art</div>
           </div>
         </div>
-      </div>
+      </section>
 
-      {/* ARTISTS CARD */}
-      <div style={{ ...CARD, background: CREMA }}>
-        <div style={{ padding: "3.5rem 2.5rem" }}>
-          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", marginBottom: "1.75rem" }}>
-            <h2 style={{ fontFamily: "'Cormorant Garamond', serif", fontSize: 34, fontWeight: 400, color: NEGRO }}>Artists on Axia</h2>
-            <span style={{ fontSize: 11, letterSpacing: "0.07em", textTransform: "uppercase", color: MUTED, borderBottom: `0.5px solid ${BORDER}`, paddingBottom: 1, cursor: "pointer" }}>Meet all artists →</span>
+      {/* ── ARTISTS ON AXIA — unchanged ── */}
+      <section className="block">
+        <div className="sec-panel">
+          <div className="sec-head">
+            <div><h2>Artists on Axia</h2></div>
+            <a className="link">Meet all artists →</a>
           </div>
-          <div className="artist-grid">
-            {displayArtists.map(a => (
-              <div key={a.uid || a.initials} style={{ border: `0.5px solid ${BORDER}`, borderRadius: 4, overflow: "hidden", cursor: "pointer" }}>
-                <div style={{ height: 130, background: a.bg || "#2e3d2a", overflow: "hidden", display: "flex", alignItems: "center", justifyContent: "center", fontFamily: "'Cormorant Garamond', serif", fontSize: 28, fontWeight: 300, color: CREMA }}>
+          <div className="artists-row">
+            {artists.map((a) => (
+              <div className="ar-card" key={a.uid}>
+                <div className="ar-tile" style={a.profileImageUrl ? { padding: 0, overflow: "hidden" } : {}}>
                   {a.profileImageUrl
                     ? <img src={a.profileImageUrl} alt={a.name} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
-                    : (a.initials || a.name?.split(" ").map(w => w[0]).join("").slice(0, 2).toUpperCase())
+                    : initials(a.name)
                   }
                 </div>
-                <div style={{ padding: "9px 11px 11px", background: "white" }}>
-                  <div style={{ fontFamily: "'Cormorant Garamond', serif", fontSize: 14, color: NEGRO, marginBottom: 1 }}>{a.name}</div>
-                  <div style={{ fontSize: 10, color: MUTED }}>{a.location}</div>
-                  <div style={{ fontSize: 10, color: VERDE, marginTop: 3, fontWeight: 500 }}>{a.artworkCount ?? a.works} works listed</div>
+                <div className="ar-meta">
+                  <h4>{a.name}</h4>
+                  <span className="loc">{a.location}</span>
+                  <span className="cnt">{a.artworkCount} works listed</span>
                 </div>
               </div>
             ))}
           </div>
         </div>
-      </div>
+      </section>
 
-      {/* FOOTER CARD */}
-      <div style={CARD}>
-        <footer className="home-footer" style={{ background: NEGRO, padding: "2.5rem" }}>
-          <AxiaLogoSmall />
-          <p style={{ fontSize: 12, color: "#8a8878", maxWidth: 220, lineHeight: 1.6 }}>
-            Where artists become collectors. The pure exchange of creative vision.
-          </p>
-          <div className="footer-links" style={{ display: "flex", gap: 18 }}>
-            {["About", "Privacy", "Terms", "Contact"].map(l => (
-              <span key={l} style={{ fontSize: 10, letterSpacing: "0.09em", textTransform: "uppercase", color: "#7a7868", cursor: "pointer" }}>{l}</span>
-            ))}
-          </div>
-        </footer>
-      </div>
+      {/* ── WAITLIST CTA — UPDATED: founders campaign ── */}
+      <section className="waitlist-cta" id="founders-campaign">
+        {/* UPDATED eyebrow */}
+        <div className="eb">◇ Founders campaign · Limited seats · Applications open</div>
+
+        {/* UPDATED headline */}
+        <h2>Become a <em>founder.</em></h2>
+
+        {/* UPDATED body copy */}
+        <div className="p">
+          The first people to join Axia won't just be members — they'll be part of what it becomes.
+          Founders shape the community, influence what gets built, and hold a stake in what this grows into.
+        </div>
+        <div className="p" style={{ marginTop: "0.75rem" }}>
+          If you believe art deserves better infrastructure than it's ever had,
+          this is where you start building it.
+        </div>
+        <div className="p" style={{ marginTop: "0.75rem", fontStyle: "italic", opacity: 0.7 }}>
+          One letter. One invitation. No noise before that.
+        </div>
+
+        <WaitlistForm />
+      </section>
+
+      {/* ── FOOTER — UPDATED tagline ── */}
+      <footer className="site-footer">
+        <div className="logo">
+          <svg width="260" height="38" viewBox="0 0 260 38" xmlns="http://www.w3.org/2000/svg">
+            <text x="104" y="28" fontFamily="'Cormorant Garamond',serif" fontSize="26" fontWeight="400" letterSpacing="6" textAnchor="end" fill="#f7f5f0">AXIA</text>
+            <g transform="translate(118,10)">
+              <line x1="0"  y1="6.5" x2="16"  y2="6.5"  stroke="#b8953a" strokeWidth="1" strokeLinecap="round"/>
+              <line x1="16" y1="6.5" x2="11.5" y2="11"  stroke="#b8953a" strokeWidth="1" strokeLinecap="round"/>
+              <line x1="16" y1="16"  x2="0"   y2="16"   stroke="#b8953a" strokeWidth="1" strokeLinecap="round"/>
+              <line x1="0"  y1="16"  x2="4.5" y2="11.5" stroke="#b8953a" strokeWidth="1" strokeLinecap="round"/>
+            </g>
+            <text x="148" y="28" fontFamily="'Cormorant Garamond',serif" fontSize="26" fontWeight="400" letterSpacing="6" fill="#f7f5f0">ART</text>
+          </svg>
+        </div>
+        {/* UPDATED tagline */}
+        <div className="fmid">The platform that takes art seriously · Built by artists, for the work itself</div>
+        <div className="fnav">
+          <a>About</a>
+          <a>Privacy</a>
+          <a>Terms</a>
+          <a>Contact</a>
+        </div>
+      </footer>
+
     </div>
   );
 }

@@ -87,7 +87,7 @@ export default function App() {
         }
       `}</style>
 
-      {page !== "admin" && <Nav page={page} setPage={setPage} user={user} />}
+      {page !== "home" && page !== "admin" && <Nav page={page} setPage={setPage} user={user} />}
 
       <div id="main-content">
         {page === "home"    && <HomePage setPage={setPage} />}
@@ -116,7 +116,7 @@ export default function App() {
                                                                 inviteLoading={inviteLoading} />}
       </div>
 
-      {user && page !== "admin" && <BottomNav page={page} setPage={setPage} user={user} />}
+      {user && page !== "home" && page !== "admin" && <BottomNav page={page} setPage={setPage} user={user} />}
     </div>
   );
 }
