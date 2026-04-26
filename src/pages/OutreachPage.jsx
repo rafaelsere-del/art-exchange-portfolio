@@ -568,42 +568,41 @@ function DetailPanel({ artist, onUpdate, onClose }) {
           </button>
         </div>
 
-        {/* Mensaje generado */}
-        {draft && (
-          <div className="card" style={{ padding: 16 }}>
-            <div style={{ fontSize: "0.6rem", color: "#6a7260", letterSpacing: "0.1em", textTransform: "uppercase", marginBottom: 10 }}>Mensaje</div>
-            <textarea
-              value={draft}
-              onChange={e => { setDraft(e.target.value); onUpdate(artist.id, { lastMessage: e.target.value }); }}
-              className="axia-input"
-              rows={7}
-              style={{ lineHeight: 1.7, resize: "vertical", background: "white" }}
-            />
-            <div style={{ display: "flex", gap: 8, marginTop: 10 }}>
-              <button onClick={copy} className="axia-btn axia-btn-ghost" style={{ flex: 1, color: copied ? "#5a7a5e" : undefined }}>
-                {copied ? "✓ Copiado" : "Copiar"}
-              </button>
-              <button
-                onClick={handleSendEmail}
-                disabled={sending || !artist.email}
-                className="axia-btn axia-btn-gold"
-                style={{ flex: 2, opacity: (sending || !artist.email) ? 0.6 : 1 }}
-              >
-                {sending ? "Enviando..." : emailSent ? "✓ Enviado" : "✦ Enviar email"}
-              </button>
-            </div>
-            {!artist.email && (
-              <div style={{ fontSize: "0.65rem", color: "#9ca891", marginTop: 8, textAlign: "center" }}>
-                Cargá el email del artista para poder enviar
-              </div>
-            )}
-            {emailError && (
-              <div style={{ fontSize: "0.68rem", color: "#7a2a2a", background: "#fdecea", padding: "8px 12px", borderRadius: 6, marginTop: 8 }}>
-                {emailError}
-              </div>
-            )}
+        {/* Mensaje — siempre visible */}
+        <div className="card" style={{ padding: 16 }}>
+          <div style={{ fontSize: "0.6rem", color: "#6a7260", letterSpacing: "0.1em", textTransform: "uppercase", marginBottom: 10 }}>Mensaje</div>
+          <textarea
+            value={draft}
+            onChange={e => { setDraft(e.target.value); onUpdate(artist.id, { lastMessage: e.target.value }); }}
+            className="axia-input"
+            placeholder="Escribí o generá un mensaje con IA..."
+            rows={7}
+            style={{ lineHeight: 1.7, resize: "vertical", background: "white" }}
+          />
+          <div style={{ display: "flex", gap: 8, marginTop: 10 }}>
+            <button onClick={copy} disabled={!draft} className="axia-btn axia-btn-ghost" style={{ flex: 1, color: copied ? "#5a7a5e" : undefined, opacity: !draft ? 0.4 : 1 }}>
+              {copied ? "✓ Copiado" : "Copiar"}
+            </button>
+            <button
+              onClick={handleSendEmail}
+              disabled={sending || !artist.email || !draft}
+              className="axia-btn axia-btn-gold"
+              style={{ flex: 2, opacity: (sending || !artist.email || !draft) ? 0.6 : 1 }}
+            >
+              {sending ? "Enviando..." : emailSent ? "✓ Enviado" : "✦ Enviar email"}
+            </button>
           </div>
-        )}
+          {!artist.email && (
+            <div style={{ fontSize: "0.65rem", color: "#9ca891", marginTop: 8, textAlign: "center" }}>
+              Cargá el email del artista para poder enviar
+            </div>
+          )}
+          {emailError && (
+            <div style={{ fontSize: "0.68rem", color: "#7a2a2a", background: "#fdecea", padding: "8px 12px", borderRadius: 6, marginTop: 8 }}>
+              {emailError}
+            </div>
+          )}
+        </div>
 
         {/* Historial */}
         {artist.history?.length > 0 && (
