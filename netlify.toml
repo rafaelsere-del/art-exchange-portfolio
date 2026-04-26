@@ -11,3 +11,8 @@
   status = 200
   force = true
   headers = {X-Api-Key = "env:VITE_ANTHROPIC_KEY", anthropic-version = "2023-06-01"}
+
+[[headers]]
+  for = "/*"
+  [headers.values]
+    Content-Security-Policy = "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://apis.google.com https://*.firebaseapp.com https://*.googleapis.com; object-src 'none';"
