@@ -25,3 +25,6 @@ dist-ssr
 artxart-seed/
 .env
 .claude/
+
+# Local Netlify folder
+.netlify

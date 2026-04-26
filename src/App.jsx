@@ -11,6 +11,7 @@ import SwipePage from "./pages/SwipePage";
 import MatchesPage from "./pages/MatchesPage";
 import ProfilePage from "./pages/ProfilePage";
 import AdminPage from "./pages/AdminPage";
+import OutreachPage from "./pages/OutreachPage";
 
 const bodyStyle = {
   fontFamily: "'DM Sans', sans-serif",
@@ -87,25 +88,29 @@ export default function App() {
         }
       `}</style>
 
-      {page !== "home" && page !== "admin" && <Nav page={page} setPage={setPage} user={user} />}
+      {page !== "home" && page !== "admin" && page !== "outreach" && (
+        <Nav page={page} setPage={setPage} user={user} />
+      )}
 
       <div id="main-content">
-        {page === "home"    && <HomePage setPage={setPage} />}
-        {page === "auth"    && <AuthPage
-                                  setUser={handleSetUser}
-                                  setPage={setPage}
-                                  settings={settings}
-                                  settingsLoading={settingsLoading}
-                                  inviteToken={inviteToken}
-                                  inviteData={inviteData}
-                                  inviteLoading={inviteLoading} />}
-        {page === "apply"   && <ApplyPage settings={settings} setPage={setPage} />}
-        {page === "gallery" && user && <GalleryPage user={user} setUser={updateUser} />}
-        {page === "swipe"   && user && <SwipePage user={user} setUser={updateUser} setPage={setPage} />}
-        {page === "matches" && user && <MatchesPage user={user} />}
-        {page === "profile" && user && <ProfilePage user={user} setUser={setUser} setPage={setPage} />}
-        {page === "admin"   && user && isAdmin && <AdminPage user={user} setPage={setPage} settings={settings} setSettings={setSettings} />}
-        {page === "admin"   && user && !isAdmin && <div style={{ padding: "120px 40px", textAlign: "center", color: "#6a7260" }}>Access denied.</div>}
+        {page === "home"     && <HomePage setPage={setPage} />}
+        {page === "auth"     && <AuthPage
+                                   setUser={handleSetUser}
+                                   setPage={setPage}
+                                   settings={settings}
+                                   settingsLoading={settingsLoading}
+                                   inviteToken={inviteToken}
+                                   inviteData={inviteData}
+                                   inviteLoading={inviteLoading} />}
+        {page === "apply"    && <ApplyPage settings={settings} setPage={setPage} />}
+        {page === "gallery"  && user && <GalleryPage user={user} setUser={updateUser} />}
+        {page === "swipe"    && user && <SwipePage user={user} setUser={updateUser} setPage={setPage} />}
+        {page === "matches"  && user && <MatchesPage user={user} />}
+        {page === "profile"  && user && <ProfilePage user={user} setUser={setUser} setPage={setPage} />}
+        {page === "admin"    && user && isAdmin && <AdminPage user={user} setPage={setPage} settings={settings} setSettings={setSettings} />}
+        {page === "admin"    && user && !isAdmin && <div style={{ padding: "120px 40px", textAlign: "center", color: "#6a7260" }}>Access denied.</div>}
+        {page === "outreach" && user && isAdmin && <OutreachPage />}
+        {page === "outreach" && user && !isAdmin && <div style={{ padding: "120px 40px", textAlign: "center", color: "#6a7260" }}>Access denied.</div>}
         {!user && !["home","auth","apply"].includes(page) && <AuthPage
                                                                 setUser={handleSetUser}
                                                                 setPage={setPage}
@@ -116,7 +121,9 @@ export default function App() {
                                                                 inviteLoading={inviteLoading} />}
       </div>
 
-      {user && page !== "home" && page !== "admin" && <BottomNav page={page} setPage={setPage} user={user} />}
+      {user && page !== "home" && page !== "admin" && page !== "outreach" && (
+        <BottomNav page={page} setPage={setPage} user={user} />
+      )}
     </div>
   );
 }

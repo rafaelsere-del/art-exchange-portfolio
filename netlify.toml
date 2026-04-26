@@ -1,0 +1,13 @@
+[build]
+  command = "npm run build"
+  publish = "dist"
+
+[functions]
+  directory = "netlify/functions"
+
+[[redirects]]
+  from = "/api/anthropic/*"
+  to = "https://api.anthropic.com/:splat"
+  status = 200
+  force = true
+  headers = {X-Api-Key = "env:VITE_ANTHROPIC_KEY", anthropic-version = "2023-06-01"}

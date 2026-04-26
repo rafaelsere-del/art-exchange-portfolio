@@ -5,6 +5,7 @@ import { createUserWithEmailAndPassword } from "firebase/auth";
 import * as XLSX from "xlsx";
 import { RADIUS } from "../styles/theme";
 import ArtSVG from "../components/ArtSVG";
+import OutreachPage from "./OutreachPage";
 
 // ─── helpers ────────────────────────────────────────────────────────────────
 const btn = (bg, color, extra = {}) => ({
@@ -71,7 +72,6 @@ export default function AdminPage({ user, setPage, settings = {}, setSettings })
 const userData = d.data();
 const artworksSnap = await getDocs(collection(db, "users", d.id, "artworks"));
 let artworks = artworksSnap.docs.map(a => ({ id: a.id, ...a.data() }));
-// Fall back to legacy artworkBase64/artworkImageUrl on the user doc
 if (artworks.length === 0 && (userData.artworkBase64 || userData.artworkImageUrl)) {
   artworks = [{
     id: "legacy",
@@ -83,7 +83,6 @@ if (artworks.length === 0 && (userData.artworkBase64 || userData.artworkImageUrl
   }];
 }
 return { uid: d.id, ...userData, artworks, hasArtwork: artworks.length > 0 };
-
           })
         );
         setUsers(usersData);
@@ -232,10 +231,8 @@ return { uid: d.id, ...userData, artworks, hasArtwork: artworks.length > 0 };
   };
 
   const saveHomepage = async () => {
-    // Only store Storage URLs — never base64 (too large for Firestore)
     const safeUrl = (url) => (url && url.startsWith("https://")) ? url : null;
 
-    // Build denormalized snapshots so homepage can read without auth
     const artistSnapshots = homepageConfig.featuredArtistUids.map(uid => {
       const u = users.find(x => x.uid === uid);
       if (!u) return null;
@@ -405,6 +402,37 @@ return { uid: d.id, ...userData, artworks, hasArtwork: artworks.length > 0 };
     .filter(art => !selectedUser || art.userUid === selectedUser.uid);
 
   // ─── Render ────────────────────────────────────────────────────────────────
+
+  // If outreach tab is active, render OutreachPage full-screen inside admin shell
+  if (tab === "outreach") {
+    return (
+      <div style={{ minHeight: "100vh", background: "#07070f" }}>
+        <div style={{
+          background: "#0a0a14", borderBottom: "1px solid #1a1a28",
+          padding: "14px 24px", display: "flex", alignItems: "center", gap: 16
+        }}>
+          <button
+            onClick={() => setTab("users")}
+            style={{
+              background: "transparent", border: "1px solid #2a2a40",
+              color: "#7c6fa0", borderRadius: 8, padding: "6px 14px",
+              cursor: "pointer", fontSize: 12, fontFamily: "'DM Sans', sans-serif"
+            }}
+          >
+            ← Admin
+          </button>
+          <span style={{
+            color: "#4b4566", fontSize: 11, letterSpacing: "0.1em",
+            textTransform: "uppercase", fontFamily: "'DM Sans', sans-serif"
+          }}>
+            Axia Art · Outreach Agent
+          </span>
+        </div>
+        <OutreachPage />
+      </div>
+    );
+  }
+
   return (
     <div style={{ paddingTop: 80, minHeight: "100vh", background: "#f7f5f0" }}>
       <style>{`
@@ -418,7 +446,7 @@ return { uid: d.id, ...userData, artworks, hasArtwork: artworks.length > 0 };
       <div style={{ background: "#14120e", color: "#f7f5f0", padding: "20px 40px", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
         <div>
           <div style={{ fontFamily: "'Cormorant Garamond',serif", fontSize: "1.4rem", fontWeight: 600 }}>
-            ART<span style={{ color: "#b8953a", fontStyle: "italic" }}>x</span>ART
+            Axia Art
             <span style={{ fontSize: "0.65rem", letterSpacing: "0.2em", textTransform: "uppercase", color: "#6a7260", marginLeft: 12 }}>Admin</span>
           </div>
           <div style={{ fontSize: "0.62rem", color: "#6a7260", marginTop: 2 }}>Logged in as {user.name}</div>
@@ -438,13 +466,22 @@ return { uid: d.id, ...userData, artworks, hasArtwork: artworks.length > 0 };
 
       {/* Tabs */}
       <div style={{ display: "flex", gap: 0, borderBottom: "1px solid rgba(0,0,0,0.08)", padding: "0 40px", background: "white", overflowX: "auto" }}>
-        {[["users","Users"], ["artworks","Artworks"], ["homepage","Homepage"], ["import","Import Excel"], ["applications","Applications"], ["invitations","Invitations"], ["settings","Settings"]].map(([id, label]) => (
+        {[
+          ["users",        "Users"],
+          ["artworks",     "Artworks"],
+          ["homepage",     "Homepage"],
+          ["import",       "Import Excel"],
+          ["applications", "Applications"],
+          ["invitations",  "Invitations"],
+          ["settings",     "Settings"],
+          ["outreach",     "✦ Outreach"],
+        ].map(([id, label]) => (
           <button key={id} onClick={() => setTab(id)} style={{
             background: "none", border: "none", cursor: "pointer",
             padding: "16px 20px", fontSize: "0.68rem", letterSpacing: "0.1em",
             textTransform: "uppercase", fontFamily: "'DM Sans',monospace",
-            color: tab === id ? "#b8953a" : "#6a7260",
-            borderBottom: tab === id ? "2px solid #b8953a" : "2px solid transparent",
+            color: tab === id ? (id === "outreach" ? "#7c3aed" : "#b8953a") : "#6a7260",
+            borderBottom: tab === id ? `2px solid ${id === "outreach" ? "#7c3aed" : "#b8953a"}` : "2px solid transparent",
             marginBottom: -1
           }}>{label}</button>
         ))}
@@ -642,6 +679,7 @@ return { uid: d.id, ...userData, artworks, hasArtwork: artworks.length > 0 };
             )}
           </div>
         )}
+
         {/* ── APPLICATIONS TAB ── */}
         {tab === "applications" && (
           <div style={{ background: "white", borderRadius: RADIUS, overflow: "hidden", boxShadow: "0 2px 12px rgba(0,0,0,0.06)" }}>
@@ -714,7 +752,6 @@ return { uid: d.id, ...userData, artworks, hasArtwork: artworks.length > 0 };
         {/* ── INVITATIONS TAB ── */}
         {tab === "invitations" && (
           <div>
-            {/* Generate invite */}
             <div style={{ background: "white", borderRadius: RADIUS, padding: "24px 28px", boxShadow: "0 2px 12px rgba(0,0,0,0.06)", marginBottom: 24 }}>
               <div style={{ fontSize: "0.65rem", textTransform: "uppercase", letterSpacing: "0.12em", color: "#6a7260", marginBottom: 14 }}>Send an Invitation</div>
               <div style={{ display: "flex", gap: 10, alignItems: "flex-start" }}>
@@ -746,7 +783,6 @@ return { uid: d.id, ...userData, artworks, hasArtwork: artworks.length > 0 };
               </div>
             </div>
 
-            {/* Invitations table */}
             <div style={{ background: "white", borderRadius: RADIUS, overflow: "hidden", boxShadow: "0 2px 12px rgba(0,0,0,0.06)" }}>
               {invitations.length === 0 ? (
                 <div style={{ padding: 40, textAlign: "center", color: "#6a7260" }}>No invitations sent yet.</div>
@@ -810,7 +846,6 @@ return { uid: d.id, ...userData, artworks, hasArtwork: artworks.length > 0 };
               <div style={{ padding: 40, textAlign: "center", color: "#6a7260" }}>Loading...</div>
             ) : (
               <>
-                {/* Featured Artists */}
                 <div style={{ background: "white", borderRadius: RADIUS, padding: "24px 28px", boxShadow: "0 2px 12px rgba(0,0,0,0.06)", marginBottom: 24 }}>
                   <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", marginBottom: 4 }}>
                     <div style={{ fontFamily: "'Cormorant Garamond',serif", fontSize: "1.3rem", fontWeight: 600 }}>Featured Artists</div>
@@ -825,10 +860,7 @@ return { uid: d.id, ...userData, artworks, hasArtwork: artworks.length > 0 };
                         <div key={u.uid} onClick={() => toggleFeaturedArtist(u.uid)}
                           style={{ display: "flex", alignItems: "center", gap: 12, padding: "10px 14px", borderRadius: RADIUS, border: `1.5px solid ${selected ? "#b8953a" : "rgba(0,0,0,0.1)"}`, background: selected ? "#b8953a08" : "white", cursor: "pointer", transition: "all 0.15s" }}>
                           <div style={{ width: 40, height: 40, borderRadius: "50%", overflow: "hidden", flexShrink: 0, background: "#e8e4db", display: "flex", alignItems: "center", justifyContent: "center", fontFamily: "'Cormorant Garamond',serif", fontSize: 16, color: "#6a7260" }}>
-                            {firstArt?.imageUrl
-                              ? <img src={firstArt.imageUrl} alt={u.name} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
-                              : u.name[0].toUpperCase()
-                            }
+                            {firstArt?.imageUrl ? <img src={firstArt.imageUrl} alt={u.name} style={{ width: "100%", height: "100%", objectFit: "cover" }} /> : u.name[0].toUpperCase()}
                           </div>
                           <div style={{ flex: 1, minWidth: 0 }}>
                             <div style={{ fontSize: "0.78rem", fontWeight: 600, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{u.name}</div>
@@ -841,7 +873,6 @@ return { uid: d.id, ...userData, artworks, hasArtwork: artworks.length > 0 };
                   </div>
                 </div>
 
-                {/* Hero Images */}
                 <div style={{ background: "white", borderRadius: RADIUS, padding: "24px 28px", boxShadow: "0 2px 12px rgba(0,0,0,0.06)", marginBottom: 24 }}>
                   <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", marginBottom: 4 }}>
                     <div style={{ fontFamily: "'Cormorant Garamond',serif", fontSize: "1.3rem", fontWeight: 600 }}>Hero Images</div>
@@ -859,17 +890,10 @@ return { uid: d.id, ...userData, artworks, hasArtwork: artworks.length > 0 };
                               <div key={art.id} onClick={() => toggleHeroArtwork(u.uid, art.id)}
                                 style={{ width: 100, cursor: "pointer", borderRadius: RADIUS, border: `2px solid ${selected ? "#2e3d2a" : "rgba(0,0,0,0.1)"}`, overflow: "hidden", transition: "border-color 0.15s", position: "relative" }}>
                                 <div style={{ height: 80, background: "#f7f5f0", overflow: "hidden" }}>
-                                  {art.imageUrl
-                                    ? <img src={art.imageUrl} alt={art.title} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
-                                    : <ArtSVG artwork={art} width={100} height={80} />
-                                  }
+                                  {art.imageUrl ? <img src={art.imageUrl} alt={art.title} style={{ width: "100%", height: "100%", objectFit: "cover" }} /> : <ArtSVG artwork={art} width={100} height={80} />}
                                 </div>
-                                <div style={{ padding: "5px 7px", fontSize: "0.58rem", color: "#14120e", lineHeight: 1.3 }}>
-                                  {art.title || "Untitled"}
-                                </div>
-                                {selected && (
-                                  <div style={{ position: "absolute", top: 4, right: 4, background: "#2e3d2a", color: "white", borderRadius: "50%", width: 18, height: 18, display: "flex", alignItems: "center", justifyContent: "center", fontSize: "0.6rem" }}>✓</div>
-                                )}
+                                <div style={{ padding: "5px 7px", fontSize: "0.58rem", color: "#14120e", lineHeight: 1.3 }}>{art.title || "Untitled"}</div>
+                                {selected && <div style={{ position: "absolute", top: 4, right: 4, background: "#2e3d2a", color: "white", borderRadius: "50%", width: 18, height: 18, display: "flex", alignItems: "center", justifyContent: "center", fontSize: "0.6rem" }}>✓</div>}
                               </div>
                             );
                           })}
@@ -879,7 +903,6 @@ return { uid: d.id, ...userData, artworks, hasArtwork: artworks.length > 0 };
                   </div>
                 </div>
 
-                {/* Featured Artworks */}
                 <div style={{ background: "white", borderRadius: RADIUS, padding: "24px 28px", boxShadow: "0 2px 12px rgba(0,0,0,0.06)", marginBottom: 24 }}>
                   <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", marginBottom: 4 }}>
                     <div style={{ fontFamily: "'Cormorant Garamond',serif", fontSize: "1.3rem", fontWeight: 600 }}>Featured Artworks</div>
@@ -897,17 +920,10 @@ return { uid: d.id, ...userData, artworks, hasArtwork: artworks.length > 0 };
                               <div key={art.id} onClick={() => toggleFeaturedArtwork(u.uid, art.id)}
                                 style={{ width: 100, cursor: "pointer", borderRadius: RADIUS, border: `2px solid ${selected ? "#b8953a" : "rgba(0,0,0,0.1)"}`, overflow: "hidden", transition: "border-color 0.15s", position: "relative" }}>
                                 <div style={{ height: 80, background: "#f7f5f0", overflow: "hidden" }}>
-                                  {art.imageUrl
-                                    ? <img src={art.imageUrl} alt={art.title} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
-                                    : <ArtSVG artwork={art} width={100} height={80} />
-                                  }
+                                  {art.imageUrl ? <img src={art.imageUrl} alt={art.title} style={{ width: "100%", height: "100%", objectFit: "cover" }} /> : <ArtSVG artwork={art} width={100} height={80} />}
                                 </div>
-                                <div style={{ padding: "5px 7px", fontSize: "0.58rem", color: "#14120e", lineHeight: 1.3 }}>
-                                  {art.title || "Untitled"}
-                                </div>
-                                {selected && (
-                                  <div style={{ position: "absolute", top: 4, right: 4, background: "#b8953a", color: "white", borderRadius: "50%", width: 18, height: 18, display: "flex", alignItems: "center", justifyContent: "center", fontSize: "0.6rem" }}>✓</div>
-                                )}
+                                <div style={{ padding: "5px 7px", fontSize: "0.58rem", color: "#14120e", lineHeight: 1.3 }}>{art.title || "Untitled"}</div>
+                                {selected && <div style={{ position: "absolute", top: 4, right: 4, background: "#b8953a", color: "white", borderRadius: "50%", width: 18, height: 18, display: "flex", alignItems: "center", justifyContent: "center", fontSize: "0.6rem" }}>✓</div>}
                               </div>
                             );
                           })}
@@ -918,9 +934,7 @@ return { uid: d.id, ...userData, artworks, hasArtwork: artworks.length > 0 };
                 </div>
 
                 <div style={{ display: "flex", alignItems: "center", gap: 16 }}>
-                  <button onClick={saveHomepage} style={btn("#14120e", "#f7f5f0", { padding: "11px 24px" })}>
-                    Save Homepage
-                  </button>
+                  <button onClick={saveHomepage} style={btn("#14120e", "#f7f5f0", { padding: "11px 24px" })}>Save Homepage</button>
                   {homepageSaved && <span style={{ fontSize: "0.7rem", color: "#5a7a5e" }}>Saved!</span>}
                 </div>
               </>
@@ -948,19 +962,10 @@ return { uid: d.id, ...userData, artworks, hasArtwork: artworks.length > 0 };
                   <div style={{ fontSize: "0.82rem", fontWeight: 600, marginBottom: 4 }}>{label}</div>
                   <div style={{ fontSize: "0.7rem", color: "#6a7260", lineHeight: 1.6 }}>{desc}</div>
                 </div>
-                {/* Toggle pill */}
                 <div
                   onClick={() => setDraftSettings(s => ({ ...s, [key]: !s[key] }))}
-                  style={{
-                    width: 44, height: 24, borderRadius: 12, cursor: "pointer", flexShrink: 0,
-                    background: draftSettings[key] ? "#5a7a5e" : "rgba(0,0,0,0.15)",
-                    position: "relative", transition: "background 0.25s"
-                  }}>
-                  <div style={{
-                    position: "absolute", top: 3, left: draftSettings[key] ? 23 : 3,
-                    width: 18, height: 18, borderRadius: "50%", background: "white",
-                    transition: "left 0.25s", boxShadow: "0 1px 3px rgba(0,0,0,0.2)"
-                  }} />
+                  style={{ width: 44, height: 24, borderRadius: 12, cursor: "pointer", flexShrink: 0, background: draftSettings[key] ? "#5a7a5e" : "rgba(0,0,0,0.15)", position: "relative", transition: "background 0.25s" }}>
+                  <div style={{ position: "absolute", top: 3, left: draftSettings[key] ? 23 : 3, width: 18, height: 18, borderRadius: "50%", background: "white", transition: "left 0.25s", boxShadow: "0 1px 3px rgba(0,0,0,0.2)" }} />
                 </div>
               </div>
             ))}
@@ -972,9 +977,7 @@ return { uid: d.id, ...userData, artworks, hasArtwork: artworks.length > 0 };
             )}
 
             <div style={{ marginTop: 28, display: "flex", alignItems: "center", gap: 16 }}>
-              <button onClick={saveSettings} style={btn("#14120e","#f7f5f0", { padding: "11px 24px" })}>
-                Save Settings
-              </button>
+              <button onClick={saveSettings} style={btn("#14120e","#f7f5f0", { padding: "11px 24px" })}>Save Settings</button>
               {settingsSaved && <span style={{ fontSize: "0.7rem", color: "#5a7a5e" }}>Saved!</span>}
             </div>
           </div>
