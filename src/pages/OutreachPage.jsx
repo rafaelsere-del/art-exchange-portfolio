@@ -146,24 +146,11 @@ Devolvé el JSON con 5 artistas.`;
 }
 
 // ── Brevo Email ───────────────────────────────────────────────────────────────
+import { templateInvitacion } from "./emailTemplates.js";
+
 async function sendEmail(artist, draft) {
   const subject = `Una invitación de Axia Art — intercambiá tu obra sin dinero`;
-
-  const htmlContent = `
-    <div style="font-family: Georgia, serif; max-width: 600px; margin: 0 auto; color: #14120e; padding: 32px 24px;">
-      <div style="font-family: 'Cormorant Garamond', Georgia, serif; font-size: 1.4rem; font-weight: 600; margin-bottom: 24px; color: #b8953a;">
-        Axia Art ✦
-      </div>
-      <div style="white-space: pre-line; line-height: 1.8; font-size: 1rem;">
-        ${draft}
-      </div>
-      <hr style="border: none; border-top: 1px solid #e0ddd6; margin: 32px 0;" />
-      <p style="font-size: 11px; color: #9ca891; line-height: 1.6;">
-        Axia Art · <a href="https://axiaart.com" style="color: #b8953a;">axiaart.com</a><br/>
-        Para dejar de recibir estos mensajes, respondé con "no gracias".
-      </p>
-    </div>
-  `;
+  const htmlContent = templateInvitacion({ artistName: artist.name, message: draft });
 
   const res = await fetch("/api/send-email", {
     method: "POST",
