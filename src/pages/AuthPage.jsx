@@ -183,51 +183,73 @@ export default function AuthPage({ setUser, setPage, settings = {}, settingsLoad
     if (form.password !== form.confirmPassword) { setError("Passwords do not match."); return; }
     if (form.password.length < 6) { setError("Password must be at least 6 characters."); return; }
     setError("");
-    try {
-      const userCredential = await createUserWithEmailAndPassword(auth, appData.email, form.password);
-      const firebaseUser = userCredential.user;
-      await setDoc(doc(db, "users", firebaseUser.uid), {
-        name: appData.name, email: appData.email,
-        bio: appData.bio || "Artist & collector",
-        location: appData.location || "Somewhere beautiful",
-        role: "artist", createdAt: new Date(),
-        createdVia: "application", applicationId: appData.id
-      });
+
+    const finishWithUser = async (firebaseUser, isNew) => {
+      if (isNew) {
+        await setDoc(doc(db, "users", firebaseUser.uid), {
+          name: appData.name, email: appData.email,
+          bio: appData.bio || "Artist & collector",
+          location: appData.location || "Somewhere beautiful",
+          role: "artist", createdAt: new Date(),
+          createdVia: "application", applicationId: appData.id
+        });
+      }
       await updateDoc(doc(db, "applications", appData.id), { usedByUid: firebaseUser.uid });
 
       let artworks = [];
       if (appData.artworkImageUrl) {
-        const shapes = ["lines", "triangle", "blocks", "circle", "grid", "waves"];
-        const randHex = () => "#" + Math.floor(Math.random() * 0xffffff).toString(16).padStart(6, "0");
-        const color1 = randHex();
-        const color2 = randHex();
-        const shape = shapes[Math.floor(Math.random() * shapes.length)];
-        const artworkData = {
-          title: appData.artworkTitle || "Untitled",
-          artist: appData.name,
-          location: appData.location || "Unknown",
-          medium: "Unknown",
-          size: "",
-          year: new Date().getFullYear(),
-          description: appData.artworkDescription || "",
-          imageUrl: appData.artworkImageUrl,
-          color1, color2, shape,
-          likes: 0,
-          createdAt: new Date()
-        };
-        const artworkRef = await addDoc(collection(db, "users", firebaseUser.uid, "artworks"), artworkData);
-        artworks = [{ id: artworkRef.id, ...artworkData }];
+        const existingSnap = await getDocs(collection(db, "users", firebaseUser.uid, "artworks"));
+        const alreadyLoaded = existingSnap.docs.some(d => d.data().imageUrl === appData.artworkImageUrl);
+        if (!alreadyLoaded) {
+          const shapes = ["lines", "triangle", "blocks", "circle", "grid", "waves"];
+          const randHex = () => "#" + Math.floor(Math.random() * 0xffffff).toString(16).padStart(6, "0");
+          const color1 = randHex();
+          const color2 = randHex();
+          const shape = shapes[Math.floor(Math.random() * shapes.length)];
+          const artworkData = {
+            title: appData.artworkTitle || "Untitled",
+            artist: appData.name,
+            location: appData.location || "Unknown",
+            medium: "Unknown",
+            size: "",
+            year: new Date().getFullYear(),
+            description: appData.artworkDescription || "",
+            imageUrl: appData.artworkImageUrl,
+            color1, color2, shape,
+            likes: 0,
+            createdAt: new Date()
+          };
+          const artworkRef = await addDoc(collection(db, "users", firebaseUser.uid, "artworks"), artworkData);
+          artworks = [{ id: artworkRef.id, ...artworkData }];
+        } else {
+          artworks = existingSnap.docs.map(d => ({ id: d.id, ...d.data() }));
+        }
       }
 
+      const profileSnap = await getDoc(doc(db, "users", firebaseUser.uid));
+      const profile = profileSnap.exists() ? profileSnap.data() : {};
       setUser({
-        uid: firebaseUser.uid, name: appData.name, email: appData.email,
-        bio: appData.bio || "Artist & collector",
-        location: appData.location || "Somewhere beautiful",
-        role: "artist", artworks, matches: [], liked: [], passed: []
+        uid: firebaseUser.uid,
+        name: profile.name || appData.name,
+        email: appData.email,
+        bio: profile.bio || appData.bio || "Artist & collector",
+        location: profile.location || appData.location || "Somewhere beautiful",
+        role: profile.role || "artist",
+        artworks, matches: [], liked: [], passed: []
       });
+    };
+
+    try {
+      const userCredential = await createUserWithEmailAndPassword(auth, appData.email, form.password);
+      await finishWithUser(userCredential.user, true);
     } catch (err) {
       if (err.code === "auth/email-already-in-use") {
-        setError("An account with this email already exists. Try signing in.");
+        try {
+          const userCredential = await signInWithEmailAndPassword(auth, appData.email, form.password);
+          await finishWithUser(userCredential.user, false);
+        } catch (signInErr) {
+          setError("An account with this email already exists. Check your password and try again.");
+        }
       } else {
         setError("Error: " + err.message);
       }
