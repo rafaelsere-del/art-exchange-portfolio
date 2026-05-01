@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { auth, db } from "../firebase";
-import { createUserWithEmailAndPassword, signInWithEmailAndPassword } from "firebase/auth";
+import { createUserWithEmailAndPassword, signInWithEmailAndPassword, sendPasswordResetEmail } from "firebase/auth";
 import { doc, setDoc, getDoc, getDocs, addDoc, collection, query, where, updateDoc } from "firebase/firestore";
 import { Field, FieldArea } from "../components/Fields";
 import { btnPrimary, btnAccent, btnOutline, RADIUS } from "../styles/theme";
@@ -15,6 +15,7 @@ export default function AuthPage({ setUser, setPage, settings = {}, settingsLoad
   const [mode, setMode] = useState(null);
   const [form, setForm] = useState({ name: "", email: "", password: "", confirmPassword: "", bio: "", location: "" });
   const [error, setError] = useState("");
+  const [resetSent, setResetSent] = useState(false);
   const [statusResult, setStatusResult] = useState(null);
   const [appData, setAppData] = useState(null);
   const [checking, setChecking] = useState(false);
@@ -248,7 +249,7 @@ export default function AuthPage({ setUser, setPage, settings = {}, settingsLoad
           const userCredential = await signInWithEmailAndPassword(auth, appData.email, form.password);
           await finishWithUser(userCredential.user, false);
         } catch (signInErr) {
-          setError("An account with this email already exists. Check your password and try again.");
+          setError("wrong-password");
         }
       } else {
         setError("Error: " + err.message);
@@ -462,7 +463,31 @@ export default function AuthPage({ setUser, setPage, settings = {}, settingsLoad
             </div>
             <Field label="Password *" name="password" value={form.password} onChange={handle} type="password" placeholder="Min. 6 characters" />
             <Field label="Confirm Password *" name="confirmPassword" value={form.confirmPassword} onChange={handle} type="password" placeholder="••••••••" />
-            {error && <p style={{ fontSize: "0.68rem", color: "#b8953a", marginBottom: 14 }}>{error}</p>}
+            {error === "wrong-password" ? (
+              <div style={{ marginBottom: 14 }}>
+                {resetSent ? (
+                  <p style={{ fontSize: "0.68rem", color: "#5a7a5e" }}>
+                    Password reset email sent to {appData.email}. Check your inbox and sign in below.
+                  </p>
+                ) : (
+                  <>
+                    <p style={{ fontSize: "0.68rem", color: "#b8953a", marginBottom: 8 }}>
+                      An account already exists for this email. If you set a password before, try signing in — or reset it.
+                    </p>
+                    <button
+                      onClick={async () => {
+                        await sendPasswordResetEmail(auth, appData.email);
+                        setResetSent(true);
+                      }}
+                      style={{ background: "none", border: "none", padding: 0, cursor: "pointer", fontSize: "0.68rem", color: "#b8953a", textDecoration: "underline" }}>
+                      Send password reset email →
+                    </button>
+                  </>
+                )}
+              </div>
+            ) : error ? (
+              <p style={{ fontSize: "0.68rem", color: "#b8953a", marginBottom: 14 }}>{error}</p>
+            ) : null}
             <button onClick={completeSignUp}
               style={btnAccent({ width: "100%" })}
               onMouseOver={e => e.currentTarget.style.background = "#e8613e"}
