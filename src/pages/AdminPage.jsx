@@ -6,6 +6,7 @@ import * as XLSX from "xlsx";
 import { RADIUS } from "../styles/theme";
 import ArtSVG from "../components/ArtSVG";
 import OutreachPage from "./OutreachPage";
+import { templateAceptacion } from "./emailTemplates";
 
 // ─── helpers ────────────────────────────────────────────────────────────────
 const btn = (bg, color, extra = {}) => ({
@@ -128,6 +129,26 @@ return { uid: d.id, ...userData, artworks, hasArtwork: artworks.length > 0 };
       status: "accepted", reviewedAt: new Date(), reviewedBy: user.uid
     });
     setApplications(prev => prev.map(a => a.id === app.id ? { ...a, status: "accepted" } : a));
+    const completeUrl = `${window.location.origin}/?complete=${app.id}`;
+    try {
+      await fetch("/api/send-email", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          to: app.email,
+          toName: app.name,
+          subject: "Tu solicitud fue aceptada — Axia Art",
+          htmlContent: templateAceptacion({
+            artistName: app.name,
+            artworkImageUrl: app.artworkImageUrl || null,
+            artworkTitle: app.artworkTitle || null,
+            completeUrl
+          })
+        })
+      });
+    } catch (err) {
+      console.error("Failed to send acceptance email:", err);
+    }
   };
 
   // ── Reject application ─────────────────────────────────────────────────────

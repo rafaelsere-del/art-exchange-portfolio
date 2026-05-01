@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { auth, db } from "../firebase";
 import { createUserWithEmailAndPassword, signInWithEmailAndPassword } from "firebase/auth";
-import { doc, setDoc, getDoc, getDocs, collection, query, where, updateDoc } from "firebase/firestore";
+import { doc, setDoc, getDoc, getDocs, addDoc, collection, query, where, updateDoc } from "firebase/firestore";
 import { Field, FieldArea } from "../components/Fields";
 import { btnPrimary, btnAccent, btnOutline, RADIUS } from "../styles/theme";
 
@@ -11,7 +11,7 @@ const INVITE_ERRORS = {
   used:      "This invite has already been used. If you have an account, sign in below."
 };
 
-export default function AuthPage({ setUser, setPage, settings = {}, settingsLoading = false, inviteToken, inviteData, inviteLoading }) {
+export default function AuthPage({ setUser, setPage, settings = {}, settingsLoading = false, inviteToken, inviteData, inviteLoading, completeAppId }) {
   const [mode, setMode] = useState(null);
   const [form, setForm] = useState({ name: "", email: "", password: "", confirmPassword: "", bio: "", location: "" });
   const [error, setError] = useState("");
@@ -34,6 +34,18 @@ export default function AuthPage({ setUser, setPage, settings = {}, settingsLoad
       setMode("invite-signup");
     }
   }, [inviteData]);
+
+  useEffect(() => {
+    if (!completeAppId) return;
+    getDoc(doc(db, "applications", completeAppId)).then(snap => {
+      if (!snap.exists()) return;
+      const data = { id: snap.id, ...snap.data() };
+      if (data.status === "accepted" && !data.usedByUid) {
+        setAppData(data);
+        setMode("complete-signup");
+      }
+    });
+  }, [completeAppId]);
 
   const signIn = async () => {
     if (!form.email || !form.password) { setError("Email and password required."); return; }
@@ -182,11 +194,36 @@ export default function AuthPage({ setUser, setPage, settings = {}, settingsLoad
         createdVia: "application", applicationId: appData.id
       });
       await updateDoc(doc(db, "applications", appData.id), { usedByUid: firebaseUser.uid });
+
+      let artworks = [];
+      if (appData.artworkImageUrl) {
+        const shapes = ["lines", "triangle", "blocks", "circle", "grid", "waves"];
+        const randHex = () => "#" + Math.floor(Math.random() * 0xffffff).toString(16).padStart(6, "0");
+        const color1 = randHex();
+        const color2 = randHex();
+        const shape = shapes[Math.floor(Math.random() * shapes.length)];
+        const artworkData = {
+          title: appData.artworkTitle || "Untitled",
+          artist: appData.name,
+          location: appData.location || "Unknown",
+          medium: "Unknown",
+          size: "",
+          year: new Date().getFullYear(),
+          description: appData.artworkDescription || "",
+          imageUrl: appData.artworkImageUrl,
+          color1, color2, shape,
+          likes: 0,
+          createdAt: new Date()
+        };
+        const artworkRef = await addDoc(collection(db, "users", firebaseUser.uid, "artworks"), artworkData);
+        artworks = [{ id: artworkRef.id, ...artworkData }];
+      }
+
       setUser({
         uid: firebaseUser.uid, name: appData.name, email: appData.email,
         bio: appData.bio || "Artist & collector",
         location: appData.location || "Somewhere beautiful",
-        role: "artist", artworks: [], matches: [], liked: [], passed: []
+        role: "artist", artworks, matches: [], liked: [], passed: []
       });
     } catch (err) {
       if (err.code === "auth/email-already-in-use") {

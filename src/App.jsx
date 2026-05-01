@@ -45,6 +45,14 @@ export default function App() {
   const [inviteData, setInviteData] = useState(null);
   const [inviteLoading, setInviteLoading] = useState(!!inviteToken);
 
+  const [completeAppId] = useState(() =>
+    new URLSearchParams(window.location.search).get("complete") || null
+  );
+
+  useEffect(() => {
+    if (completeAppId) setPage("auth");
+  }, [completeAppId]);
+
   useEffect(() => {
     if (!inviteToken) return;
     getDoc(doc(db, "invitations", inviteToken)).then(snap => {
@@ -101,7 +109,8 @@ export default function App() {
                                    settingsLoading={settingsLoading}
                                    inviteToken={inviteToken}
                                    inviteData={inviteData}
-                                   inviteLoading={inviteLoading} />}
+                                   inviteLoading={inviteLoading}
+                                   completeAppId={completeAppId} />}
         {page === "apply"    && <ApplyPage settings={settings} setPage={setPage} />}
         {page === "gallery"  && user && <GalleryPage user={user} setUser={updateUser} />}
         {page === "swipe"    && user && <SwipePage user={user} setUser={updateUser} setPage={setPage} />}
@@ -118,7 +127,8 @@ export default function App() {
                                                                 settingsLoading={settingsLoading}
                                                                 inviteToken={inviteToken}
                                                                 inviteData={inviteData}
-                                                                inviteLoading={inviteLoading} />}
+                                                                inviteLoading={inviteLoading}
+                                                                completeAppId={completeAppId} />}
       </div>
 
       {user && page !== "home" && page !== "admin" && page !== "outreach" && (
