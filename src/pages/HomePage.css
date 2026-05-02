@@ -35,6 +35,11 @@
 
 /* ── Top bar ── */
 .axia-home .topbar { background: #14180F; color: #E8E2D4; padding: 14px 28px; display: flex; align-items: center; justify-content: space-between; }
+.axia-home .burger { display: none; flex-direction: column; gap: 5px; padding: 6px; background: none; border: none; cursor: pointer; }
+.axia-home .burger span { display: block; width: 22px; height: 2px; background: #E8E2D4; transition: .2s; }
+.axia-home .mobile-menu { display: none; flex-direction: column; background: #14180F; border-top: 1px solid rgba(244,239,230,.1); }
+.axia-home .mobile-menu a { padding: 16px 24px; font-size: 13px; letter-spacing: .12em; text-transform: uppercase; color: #B7B0A0; border-bottom: 1px solid rgba(244,239,230,.07); cursor: pointer; }
+.axia-home .mobile-menu a.join { color: var(--gold); }
 .axia-home .logo { font-family: "DM Sans", sans-serif; font-size: 20px; letter-spacing: .26em; font-weight: 400; }
 .axia-home .logo .mark { color: var(--gold); margin: 0 .5em; }
 .axia-home .topbar-nav { display: flex; gap: 32px; font-size: 12.5px; letter-spacing: .12rem; text-transform: uppercase; color: #B7B0A0; }
@@ -354,13 +359,61 @@
   .axia-home .moves { padding: 48px 28px; }
   .axia-home .moves-grid { grid-template-columns: repeat(2,1fr); }
   .axia-home .action-preview-grid { grid-template-columns: 1fr; }
+  .axia-home .mfs-card .big { font-size: 32px !important; }
+  .axia-home .sec-head { flex-wrap: wrap; gap: 16px; }
 }
 
 @media (max-width: 600px) {
+  /* nav: burger menu */
+  .axia-home .topbar-nav { display: none; }
+  .axia-home .topbar .join { display: none; }
+  .axia-home .burger { display: flex; }
+  .axia-home .mobile-menu.open { display: flex; }
+
+  /* hero */
   .axia-home .hero-right { display: none; }
+  .axia-home .hero-left { padding: 40px 24px 36px; }
+  .axia-home h1.headline { font-size: 38px !important; }
+
+  /* values bar */
+  .axia-home .values { grid-template-columns: repeat(2,1fr); padding: 16px 20px; }
+
+  /* cards: reduce padding to 16px */
+  .axia-home .sec-panel { padding: 20px 16px; }
+  .axia-home .ex-meta { padding: 10px 16px 14px; }
+  .axia-home .ar-meta { padding: 10px 16px 12px; }
+  .axia-home .mfs-card { padding: 16px; aspect-ratio: unset; min-height: 220px; }
+  .axia-home .mfs-card .big { font-size: 28px !important; }
+  .axia-home .grid-manifesto { grid-template-columns: 1fr; }
+
+  /* sec-head: stack title and link vertically */
+  .axia-home .sec-head { flex-direction: column; align-items: flex-start; gap: 12px; }
+  .axia-home .sec-head h2 { font-size: 28px !important; }
+
+  /* moves */
+  .axia-home .moves { padding: 40px 20px; }
+  .axia-home .moves-grid { grid-template-columns: 1fr; gap: 28px; }
+  .axia-home .mv-step { padding: 0; border-left: none; padding-top: 20px; border-top: 1px solid rgba(244,239,230,.12); }
+  .axia-home .mv-step:first-child { border-top: none; padding-top: 0; }
+
+  /* exchange/artists */
   .axia-home .exchange-grid { grid-template-columns: 1fr; }
   .axia-home .artists-row { grid-template-columns: repeat(2,1fr); }
-  .axia-home footer { flex-direction: column; gap: 20px; text-align: center; }
-  .axia-home .fnav { flex-wrap: wrap; justify-content: center; }
-  .axia-home .values { grid-template-columns: repeat(2,1fr); }
+
+  /* waitlist form: stack vertically */
+  .axia-home .waitlist-form { flex-direction: column; padding: 8px; }
+  .axia-home .waitlist-form input { padding: 12px 14px; }
+  .axia-home .waitlist-form button { width: 100%; padding: 14px; }
+  .axia-home .waitlist-role { flex-direction: column; align-items: center; gap: 12px; }
+
+  /* "who can do what" card: stacked layout */
+  .axia-home .ap-tier-guide { padding: 0; overflow: hidden; }
+  .axia-home .ap-tier-guide-label { padding: 12px 14px 10px; }
+  .axia-home .ap-tier-row { flex-direction: column; gap: 5px; padding: 12px 14px; margin-bottom: 0; border-top: 1px solid var(--line); }
+  .axia-home .ap-tier-row .action-tier-badge { margin-top: 0; align-self: flex-start; }
+  .axia-home .ap-tier-desc { font-size: 12px !important; }
+
+  /* footer: stack with left-aligned nav */
+  .axia-home footer { flex-direction: column; gap: 16px; text-align: left; align-items: flex-start; }
+  .axia-home .fnav { flex-wrap: wrap; justify-content: flex-start; }
 }

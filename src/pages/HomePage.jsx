@@ -202,6 +202,7 @@ function ActionPreview({ setPage }) {
 export default function HomePage({ setPage }) {
   const [heroArtworks, setHeroArtworks] = useState([]);
   const [artists, setArtists]           = useState(MOCK_ARTISTS);
+  const [menuOpen, setMenuOpen]         = useState(false);
 
   useEffect(() => {
     getDoc(doc(db, "settings", "homepage")).then((snap) => {
@@ -231,17 +232,29 @@ export default function HomePage({ setPage }) {
             <text x="148" y="28" fontFamily="'Cormorant Garamond',serif" fontSize="26" fontWeight="400" letterSpacing="6" fill="#f7f5f0">ART</text>
           </svg>
         </div>
-        <nav className="topbar-nav" aria-label="Primary" style={{ display: "flex", gap: "2rem" }}>
+        <nav className="topbar-nav" aria-label="Primary">
           <a href="#manifesto">Manifesto</a>
           <a href="#how-it-works">How it works</a>
-          {/* UPDATED: "Founding cohort" → "Founders campaign" */}
           <a href="#founders-campaign">Founders campaign</a>
         </nav>
-        {/* UPDATED: "Join the waitlist" → "Become a founder" */}
-        <a className="join" onClick={() => setPage("auth")} style={{ cursor: "pointer" }}>
+        <a className="join" onClick={() => setPage("auth")}>
           Become a founder
         </a>
+        <button
+          className="burger"
+          aria-label="Toggle menu"
+          aria-expanded={menuOpen}
+          onClick={() => setMenuOpen(o => !o)}
+        >
+          <span /><span /><span />
+        </button>
       </header>
+      <nav className={`mobile-menu${menuOpen ? " open" : ""}`} aria-label="Mobile">
+        <a href="#manifesto" onClick={() => setMenuOpen(false)}>Manifesto</a>
+        <a href="#how-it-works" onClick={() => setMenuOpen(false)}>How it works</a>
+        <a href="#founders-campaign" onClick={() => setMenuOpen(false)}>Founders campaign</a>
+        <a className="join" onClick={() => { setMenuOpen(false); setPage("auth"); }}>Become a founder</a>
+      </nav>
 
       {/* ── HERO ── */}
       <section className="hero">
