@@ -4,11 +4,9 @@ function AxiaLogo({ fill = "#f7f5f0" }) {
   return (
     <svg width="260" height="38" viewBox="0 0 260 38" xmlns="http://www.w3.org/2000/svg">
       <text x="104" y="28" fontFamily="'Cormorant Garamond',serif" fontSize="26" fontWeight="400" letterSpacing="6" fill={fill} textAnchor="end">AXIA</text>
-      <g transform="translate(118,10)">
-        <line x1="0" y1="6.5" x2="16" y2="6.5" stroke={ORO} strokeWidth="1" strokeLinecap="round"/>
-        <line x1="16" y1="6.5" x2="11.5" y2="11" stroke={ORO} strokeWidth="1" strokeLinecap="round"/>
-        <line x1="16" y1="16" x2="0" y2="16" stroke={ORO} strokeWidth="1" strokeLinecap="round"/>
-        <line x1="0" y1="16" x2="4.5" y2="11.5" stroke={ORO} strokeWidth="1" strokeLinecap="round"/>
+      <g transform="translate(112,10)">
+        <path d="M0,6.5 L18,6.5 L13.5,11" fill="none" stroke={ORO} strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round"/>
+        <path d="M18,16 L0,16 L4.5,11.5" fill="none" stroke={ORO} strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round"/>
       </g>
       <text x="148" y="28" fontFamily="'Cormorant Garamond',serif" fontSize="26" fontWeight="400" letterSpacing="6" fill={fill}>ART</text>
     </svg>
