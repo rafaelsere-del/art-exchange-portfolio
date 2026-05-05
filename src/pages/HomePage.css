@@ -48,7 +48,7 @@
 .axia-home .join:hover { background: var(--gold); color: #14180F; border-color: var(--gold); }
 
 /* ── Hero ── */
-.axia-home .hero { background: var(--forest); color: var(--cream); margin: 20px 20px 0; border-radius: 16px; overflow: hidden; display: grid; grid-template-columns: 1.05fr 1fr; gap: 0; }
+.axia-home .hero { background: var(--forest); color: var(--cream); margin: 20px 20px 0; border-radius: 16px; overflow: hidden; display: grid; grid-template-columns: 1.05fr 1fr; gap: 0; min-height: 520px; }
 .axia-home .hero-left { padding: 64px 60px 56px; display: flex; flex-direction: column; justify-content: center; }
 .axia-home .eyebrow { font-family: var(--mono); font-size: 11px; letter-spacing: .2em; text-transform: uppercase; color: var(--gold); display: flex; align-items: center; gap: 10px; margin-bottom: 28px; }
 .axia-home .eyebrow .dot { width: 6px; height: 6px; border-radius: 50%; background: var(--gold); animation: axia-pulse 2.4s ease-in-out infinite; flex-shrink: 0; }
@@ -64,7 +64,8 @@
 .axia-home .waitlist-meta { margin-top: 22px; font-family: var(--mono); font-size: 11px; letter-spacing: .14em; text-transform: uppercase; color: #9A9485; display: flex; align-items: center; gap: 14px; }
 .axia-home .waitlist-meta .count { color: var(--gold); }
 
-.axia-home .hero-right { position: relative; padding: 40px; display: flex; align-items: center; justify-content: center; background: radial-gradient(circle at 30% 20%, rgba(200,168,92,.10), transparent 60%), radial-gradient(circle at 80% 80%, rgba(200,168,92,.06), transparent 60%), var(--forest-2); border-left: 1px solid rgba(244,239,230,.06); }
+.axia-home .hero-right { position: relative; overflow: hidden; border-left: 1px solid rgba(244,239,230,.06); }
+.axia-home .hero-image { display: block; width: 100%; height: 100%; object-fit: cover; object-position: center; }
 .axia-home .art-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; width: 100%; max-width: 500px; }
 .axia-home .art-tile { position: relative; aspect-ratio: 1/1.1; overflow: hidden; background: #1A201A; border: 1px solid rgba(244,239,230,.08); border-radius: 16px; }
 .axia-home .art-tile .art-ph { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; }
@@ -93,7 +94,7 @@
 .axia-home .sec-panel { background: #FBF7ED; border: 1px solid var(--line); border-radius: 16px; padding: 44px; }
 
 /* ── Exchange cards ── */
-.axia-home .exchange-grid { display: grid; grid-template-columns: repeat(4,1fr); gap: 18px; }
+.axia-home .exchange-grid { display: grid; grid-template-columns: repeat(4,1fr); gap: 16px; }
 .axia-home .ex-card { background: #FBF7ED; border: 1px solid var(--line); border-radius: 16px; overflow: hidden; display: flex; flex-direction: column; }
 .axia-home .ex-img { aspect-ratio: 1/1; position: relative; display: flex; align-items: center; justify-content: center; overflow: hidden; }
 .axia-home .ex-img img { width: 100%; height: 100%; object-fit: cover; }
@@ -108,7 +109,7 @@
 .axia-home .ex-btn:hover { background: var(--gold); color: var(--forest); border-color: var(--gold); }
 
 /* ── Manifesto tiles ── */
-.axia-home .grid-manifesto { display: grid; grid-template-columns: repeat(4,1fr); gap: 14px; }
+.axia-home .grid-manifesto { display: grid; grid-template-columns: repeat(4,1fr); gap: 16px; }
 .axia-home .mfs-card { aspect-ratio: 3/4; background: var(--forest); color: var(--cream); border-radius: 16px; padding: 24px; display: flex; flex-direction: column; justify-content: space-between; transition: .3s; }
 .axia-home .mfs-card:hover { transform: translateY(-3px); }
 .axia-home .mfs-card .topline { display: flex; justify-content: space-between; align-items: flex-start; }
@@ -131,14 +132,14 @@
 .axia-home .mfs-card.paper .caption { color: var(--ink-2); border-color: rgba(30,36,28,.14); }
 
 /* ── Founder variation ── */
-.axia-home .grid-founder { display: grid; grid-template-columns: 1.3fr 1fr 1fr; gap: 18px; }
+.axia-home .grid-founder { display: grid; grid-template-columns: 1.3fr 1fr 1fr; gap: 16px; }
 .axia-home .fnd-feature { background: var(--forest); color: var(--cream); border-radius: 16px; padding: 32px; display: flex; flex-direction: column; justify-content: space-between; min-height: 420px; }
 .axia-home .fnd-feature .ph { flex: 1; background: repeating-linear-gradient(135deg, rgba(244,239,230,.05) 0 12px, transparent 12px 24px), linear-gradient(180deg, #3A4436, #2A3328); display: flex; align-items: center; justify-content: center; margin-bottom: 22px; border: 1px solid rgba(244,239,230,.08); }
 .axia-home .fnd-feature .ph span { font-family: var(--mono); font-size: 10px; letter-spacing: .2em; color: #8F8876; text-transform: uppercase; }
 .axia-home .fnd-feature h3 { font-family: var(--serif) !important; font-size: 28px !important; font-weight: 400 !important; margin-bottom: 8px !important; }
 .axia-home .fnd-feature .meta { font-family: var(--mono); font-size: 10.5px; letter-spacing: .18em; color: var(--gold); text-transform: uppercase; margin-bottom: 14px; }
 .axia-home .fnd-feature p { font-size: 13.5px !important; color: #BDB7A8 !important; line-height: 1.55 !important; }
-.axia-home .fnd-side { display: grid; grid-template-rows: 1fr 1fr; gap: 18px; }
+.axia-home .fnd-side { display: grid; grid-template-rows: 1fr 1fr; gap: 16px; }
 .axia-home .fnd-card { background: #FBF7ED; border: 1px solid var(--line); border-radius: 16px; padding: 18px; display: flex; flex-direction: column; }
 .axia-home .fnd-card .ph { flex: 1; background: repeating-linear-gradient(135deg, rgba(30,36,28,.06) 0 10px, transparent 10px 20px), #E8E1D1; display: flex; align-items: center; justify-content: center; margin-bottom: 14px; border: 1px solid var(--line); }
 .axia-home .fnd-card .ph span { font-family: var(--mono); font-size: 10px; letter-spacing: .18em; color: var(--ink-2); text-transform: uppercase; opacity: .7; }
@@ -150,7 +151,7 @@
 .axia-home .fnd-note .sig { font-family: var(--serif); font-style: italic; font-size: 22px; color: var(--gold-dim); margin-left: auto; white-space: nowrap; }
 
 /* ── Movements variation ── */
-.axia-home .grid-movements { display: grid; grid-template-columns: repeat(4,1fr); gap: 18px; }
+.axia-home .grid-movements { display: grid; grid-template-columns: repeat(4,1fr); gap: 16px; }
 .axia-home .mv-card { background: #FBF7ED; border: 1px solid var(--line); border-radius: 16px; overflow: hidden; display: flex; flex-direction: column; }
 .axia-home .mv-swatch { aspect-ratio: 4/5; display: flex; align-items: flex-end; padding: 18px; position: relative; }
 .axia-home .mv-swatch::after { content: ""; position: absolute; inset: 0; background: repeating-linear-gradient(45deg, rgba(0,0,0,.04) 0 2px, transparent 2px 8px); }
@@ -197,7 +198,7 @@
 .axia-home .letter .rhs .sign-name { font-family: var(--mono); font-size: 11px; letter-spacing: .18em; text-transform: uppercase; color: var(--ink-2); margin-top: 8px; }
 
 /* ── Artists ── */
-.axia-home .artists-row { display: grid; grid-template-columns: repeat(5,1fr); gap: 14px; }
+.axia-home .artists-row { display: grid; grid-template-columns: repeat(5,1fr); gap: 16px; }
 .axia-home .ar-card { background: #FBF7ED; border: 1px solid var(--line); overflow: hidden; border-radius: 16px; cursor: pointer; }
 .axia-home .ar-tile { aspect-ratio: 1/1; background: var(--forest); color: var(--cream); display: flex; align-items: center; justify-content: center; font-family: var(--serif); font-size: 34px; letter-spacing: .08em; font-weight: 400; overflow: hidden; }
 .axia-home .ar-tile img { width: 100%; height: 100%; object-fit: cover; }

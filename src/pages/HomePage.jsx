@@ -297,20 +297,7 @@ export default function HomePage({ setPage }) {
         </div>
 
         <div className="hero-right">
-          <div className="art-grid">
-            {heroTiles.map((art, i) => (
-              <figure className="art-tile" key={art.id || i}>
-                {art.imageUrl
-                  ? <img src={art.imageUrl} alt={art.title} style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }} />
-                  : <div className={`art-ph ${art.ph || PH_CLASSES[i % 4]}`}><span>{art.title?.toUpperCase()}</span></div>
-                }
-                <figcaption>
-                  <span className="ttl">{art.title}</span>
-                  <span className="who">{art.artist}</span>
-                </figcaption>
-              </figure>
-            ))}
-          </div>
+          <img src="/images/hero.jpg" alt="Hero artwork" className="hero-image" />
         </div>
       </section>
 
@@ -369,16 +356,18 @@ export default function HomePage({ setPage }) {
       <section className="block">
         <div className="letter">
           <div className="lhs">
-            <div className="seal">A</div>
+            <div className="seal">V</div>
             <div className="label">◇ Letter from the founder</div>
-            <h3>Why we're starting small, on purpose.</h3>
+            <h3>Why</h3>
           </div>
           <div className="rhs">
-            <p>I'm building Axia because I'm tired of watching artists hand half their income to galleries, and watching collectors pretend art is an asset class.</p>
-            <p>For now, it's just <em>me and my studio.</em> The works you'd see here are mine. I'd rather show you an honest empty room than fake a crowd.</p>
-            <p>If the idea resonates, join the waitlist. When we open, we'll let in <em>thirty artists</em> as a founding cohort. Small, deliberate, real.</p>
-            <div className="sign">— Rafael</div>
-            <div className="sign-name">Rafael Sava · Founder, Axia Art</div>
+            <p>There is a moment every artist knows, or at least has thought about it. The work is finished.</p>
+            <p>Forms for online galleries, artist statements written to fit dropdown menus. The emails to institutions that don't write back. The hours that should belong to the making, swallowed by the apparatus of being seen. Then the feed. The pressure to post, to perform, to pitch. The slow erosion of seeing every person you meet as a potential client.</p>
+            <p>Axia Art is built around a deeper belief: that the value of art lives somewhere the market has never been able to reach. It begins with <em>resonance,</em> the way a piece finds the person it was always meant for, across distance and time and difference. That's where we started. Not with the transaction, but with the connection.</p>
+            <p>From resonance, we built the Exchange. A place where artists trade work directly. Peer to peer, work for work, value for value. The oldest form of the art economy, rebuilt for now.</p>
+            <p><strong>This is what Axia Art is.</strong> Built by an artist, with art as the only purpose. Everything else follows from there.</p>
+            <div className="sign">Vito</div>
+            <div className="sign-name">Vito Parteli · Founder artist, Axia Art</div>
           </div>
         </div>
       </section>
