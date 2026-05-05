@@ -189,10 +189,6 @@ export default function ManifestoGrid() {
         </div>
       </section>
 
-      <button className="tweaks-fab" onClick={() => setPanelOpen((o) => !o)}>
-        ◇ Tweaks
-      </button>
-
       {panelOpen && (
         <div className="tweaks-panel">
           <h4>Artwork grid</h4>
