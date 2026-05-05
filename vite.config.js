@@ -18,7 +18,7 @@ export default defineConfig(({ mode }) => {
                 "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://www.googletagmanager.com",
                 "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
                 "font-src 'self' https://fonts.gstatic.com",
-                "connect-src 'self' https://api.anthropic.com https://*.googleapis.com https://*.firebaseio.com https://*.firebase.com wss://*.firebaseio.com https://identitytoolkit.googleapis.com https://securetoken.googleapis.com https://firestore.googleapis.com https://storage.googleapis.com https://www.google-analytics.com https://analytics.google.com",
+                "connect-src 'self' https://api.anthropic.com https://*.googleapis.com https://*.firebaseio.com https://*.firebase.com wss://*.firebaseio.com https://identitytoolkit.googleapis.com https://securetoken.googleapis.com https://firestore.googleapis.com https://storage.googleapis.com https://www.google-analytics.com https://analytics.google.com https://region1.google-analytics.com",
                 "img-src 'self' data: https: blob:",
               ].join('; ')
             )
