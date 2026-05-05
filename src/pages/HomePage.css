@@ -85,7 +85,7 @@
 .axia-home .val .v { font-family: var(--serif); font-size: 22px; font-style: italic; color: var(--cream); }
 
 /* ── Section shell ── */
-.axia-home .block { padding: 80px 20px; }
+.axia-home .block { padding: 20px 20px; }
 .axia-home .sec-head { display: flex; align-items: flex-end; justify-content: space-between; margin-bottom: 36px; gap: 40px; }
 .axia-home .sec-head h2 { font-family: var(--serif) !important; font-weight: 400 !important; font-size: 38px !important; line-height: 1.1 !important; }
 .axia-home .sec-head .sub { font-family: var(--mono); font-size: 11px; letter-spacing: .2em; text-transform: uppercase; color: var(--gold-dim); margin-bottom: 6px; }
@@ -252,7 +252,7 @@
    Replaces the "Available for exchange" block
 ══════════════════════════════════════════════ */
 
-.axia-home .action-preview-section { padding: 80px 20px; }
+.axia-home .action-preview-section { padding: 20px 20px; }
 
 .axia-home .action-preview-section .sec-panel { background: #FBF7ED; border: 1px solid var(--line); border-radius: 16px; padding: 44px; }
 

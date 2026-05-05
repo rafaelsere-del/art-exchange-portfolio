@@ -1,5 +1,13 @@
-<svg width="64" height="64" viewBox="0 0 80 56" xmlns="http://www.w3.org/2000/svg">
-  <rect width="80" height="56" fill="#14120e"/>
-  <path d="M0,12 L80,12 L64,30" fill="none" stroke="#b8953a" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"/>
-  <path d="M80,44 L0,44 L16,26" fill="none" stroke="#b8953a" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"/>
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="93" height="56" viewBox="0 0 93 56">
+  <defs>
+    <clipPath id="clip-Favicon">
+      <rect width="93" height="56"/>
+    </clipPath>
+  </defs>
+  <g id="Favicon" clip-path="url(#clip-Favicon)">
+    <g id="favicon-2" data-name="favicon" transform="translate(7)">
+      <path id="Path_2" data-name="Path 2" d="M0,12H80L64,30" fill="none" stroke="#b8953a" stroke-linecap="round" stroke-linejoin="round" stroke-width="3.5"/>
+      <path id="Path_3" data-name="Path 3" d="M80,44H0L16,26" fill="none" stroke="#b8953a" stroke-linecap="round" stroke-linejoin="round" stroke-width="3.5"/>
+    </g>
+  </g>
 </svg>
